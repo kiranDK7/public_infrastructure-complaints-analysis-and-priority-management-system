@@ -29,6 +29,24 @@ from services.priority_engine import calculate_priority
 from services.duplicate_detector import check_duplicate
 
 class SmartCivicCare2TestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # If database is clean, seed temporary test fixtures for test suite execution
+        from models.database import query_db
+        from database.seed_data import seed
+        with create_app().app_context():
+            cnt = query_db("SELECT COUNT(*) as c FROM complaints", one=True)['c']
+            if cnt == 0:
+                print("\n[Test Suite] Initializing temporary verification fixtures for test run...")
+                seed()
+
+    @classmethod
+    def tearDownClass(cls):
+        # Always return database back to clean fresh state (0 complaints) for live production
+        from database.reset_fresh_data import reset_fresh
+        print("\n[Test Suite] Returning database to fresh clean state (0 complaints)...")
+        reset_fresh()
+
     def setUp(self):
         self.app = create_app()
         self.app.config['TESTING'] = True
