@@ -112,7 +112,9 @@ def seed():
             (9, "Priya Patel", "priya.patel@example.com", generate_password_hash("citizen123"), "citizen", None, "+91 98123 45678", "B-204 Skyline Towers, Central Avenue", "Ward 12", "kn"),
             (10, "Arjun Kumar", "arjun.kumar@example.com", generate_password_hash("citizen123"), "citizen", None, "+91 98234 56789", "78 Brigade Cross, Market District", "Ward 42", "en"),
             # 11. Dedicated Municipal Administration Account
-            (12, "Municipal Administration Command", "administration@smartcivic.gov", generate_password_hash("administration"), "admin", None, "+91 98000 00000", "Smart City Municipal Headquarters, Central Command", "Ward 42", "en")
+            (12, "Municipal Administration Command", "administration@smartcivic.gov", generate_password_hash("administration"), "admin", None, "+91 98000 00000", "Smart City Municipal Headquarters, Central Command", "Ward 42", "en"),
+            # 12. AIEMS Administration Account
+            (13, "Municipal Administration (AIEMS)", "aiems123@gmail.com", generate_password_hash("12345678"), "admin", None, "+91 98000 12345", "Smart City Municipal Headquarters, Executive Directorate", "Ward 42", "en")
         ]
         conn.executemany(
             """

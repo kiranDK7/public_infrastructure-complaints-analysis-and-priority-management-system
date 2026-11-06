@@ -139,6 +139,7 @@ CivicCare provides isolated operational dashboards for each municipal authority:
 
 | Role | Account / Identifier | Password | Primary Responsibility |
 |---|---|---|---|
+| **AIEMS Admin (Administration)** | `aiems123@gmail.com` | `12345678` | Executive municipal administration & full authority |
 | **Administration (Admin)** | `administration` *(or `administration@smartcivic.gov`)* | `administration` | City-wide administration, overrides, escalations, budget G.O. |
 | **Commissioner (Admin)** | `admin@smartcivic.gov` | `admin123` *(or `administration`)* | Chief Municipal Commissioner account |
 | **Drainage Officer** | `officer.drainage@smartcivic.gov` | `officer123` | Flood & stormwater rapid action wing |

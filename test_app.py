@@ -516,7 +516,16 @@ class SmartCivicCare2TestCase(unittest.TestCase):
             self.assertEqual(sess.get('role'), 'admin')
 
         self.client.get('/logout')
-        print("[TEST PASS] Administration account and password 'administration' authenticated and verified.")
+
+        # 4. Login using AIEMS administration account 'aiems123@gmail.com' and password '12345678'
+        r4 = self.client.post('/login', data={'email': 'aiems123@gmail.com', 'password': '12345678', 'portal_type': 'admin'}, follow_redirects=True)
+        self.assertEqual(r4.status_code, 200)
+        with self.client.session_transaction() as sess:
+            self.assertEqual(sess.get('role'), 'admin')
+            self.assertEqual(sess.get('email'), 'aiems123@gmail.com')
+
+        self.client.get('/logout')
+        print("[TEST PASS] Administration accounts (including aiems123@gmail.com) authenticated and verified.")
 
 if __name__ == '__main__':
     unittest.main()
