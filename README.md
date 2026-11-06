@@ -1,4 +1,4 @@
-# SMART CIVICCARE 2.0
+# CivicCare
 ### AI-Powered Public Infrastructure Complaint Analysis, Department Management, Live Evidence Capture & Demand Forecasting System
 **Hackathon Track:** Smart Cities – Track T1 | **Category:** Artificial Intelligence + Smart City + Civic Technology  
 **Application Type:** Full-Stack Responsive Web Application | **Status:** 100% Complete & Unit-Tested
@@ -7,9 +7,9 @@
 
 ## 🌟 Executive Summary
 
-**SMART CIVICCARE 2.0** transforms reactive civic complaint management into an **intelligent, predictive, and preventive infrastructure management ecosystem**.
+**CivicCare** transforms reactive civic complaint management into an **intelligent, predictive, and preventive infrastructure management ecosystem**.
 
-Designed for citizens, municipal commissioners, and specialized department field officers, Smart CivicCare 2.0 integrates:
+Designed for citizens, municipal commissioners, and specialized department field officers, CivicCare integrates:
 1. **Strict Camera-Only Evidence Capture:** Live device camera photo snapshot (via Canvas) and video recording (via MediaRecorder). File gallery browsing is strictly prohibited to eliminate spoofing.
 2. **Live High-Accuracy GPS Geolocation:** `navigator.geolocation` coordinate capture with real-time accuracy radii, interactive Leaflet verification map, and labeled manual fallback.
 3. **6 Independent Municipal Departments:** Dedicated operational command portals for Roads (`ROADS`), Water (`WATER`), Solid Waste (`WASTE`), Electrical & Lighting (`LIGHT`), Drainage & Stormwater (`DRAIN`), and Public Infrastructure (`INFRA`).
@@ -95,7 +95,7 @@ The database schema (`models/schema.py`) is structured for high data integrity, 
 
 ## ⚡ 6 Specialized Municipal Departments
 
-Smart CivicCare 2.0 provides isolated operational dashboards for each municipal authority:
+CivicCare provides isolated operational dashboards for each municipal authority:
 
 1. **Department of Road Damage Management (`ROADS`)**
    - Asphalt erosion, crater potholes, road resurfacing, flyover approach damage.
@@ -137,14 +137,15 @@ Smart CivicCare 2.0 provides isolated operational dashboards for each municipal 
 
 ### Demonstration User Accounts (1-Click Fill on Login Page):
 
-| Role | Account Email | Password | Primary Responsibility |
+| Role | Account / Identifier | Password | Primary Responsibility |
 |---|---|---|---|
-| **Commissioner (Admin)** | `admin@smartcivic.gov` | `admin123` | City-wide oversight, overrides, escalations |
+| **Administration (Admin)** | `administration` *(or `administration@smartcivic.gov`)* | `administration` | City-wide administration, overrides, escalations, budget G.O. |
+| **Commissioner (Admin)** | `admin@smartcivic.gov` | `admin123` *(or `administration`)* | Chief Municipal Commissioner account |
 | **Drainage Officer** | `officer.drainage@smartcivic.gov` | `officer123` | Flood & stormwater rapid action wing |
 | **Roads Officer** | `officer.roads@smartcivic.gov` | `officer123` | Road network maintenance & pothole triage |
 | **Water Officer** | `officer.water@smartcivic.gov` | `officer123` | Drinking water pipeline repair wing |
 | **Waste Officer** | `officer.waste@smartcivic.gov` | `officer123` | Municipal sanitation inspector |
-| **Citizen (Reporter)** | `citizen@example.com` | `citizen123` | Rahul Sharma (Ward 42 resident) |
+| **Citizen (Reporter)** | `9876543210` *(or `citizen@example.com`)* | `citizen123` | Rahul Sharma (Ward 42 resident) |
 
 ---
 
@@ -234,4 +235,4 @@ Open your browser and navigate to: **`http://127.0.0.1:5000`**
 
 ---
 
-*SMART CIVICCARE 2.0 — Built for Smart Cities Track T1 National Hackathon.*
+*CivicCare — Built for Smart Cities Track T1 National Hackathon.*

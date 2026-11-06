@@ -14,6 +14,7 @@ from config import Config
 
 admin_bp = Blueprint('admin', __name__)
 
+@admin_bp.route('/admin')
 @admin_bp.route('/admin/dashboard')
 @login_required
 @role_required(['admin'])

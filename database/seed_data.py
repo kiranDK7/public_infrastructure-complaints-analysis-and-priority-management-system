@@ -99,7 +99,7 @@ def seed():
         print("[Seed 2.0] Inserting Users (Admin, 6 Officers, Citizens)...")
         users = [
             # 1. Super Admin
-            (1, "Chief Municipal Commissioner", "admin@smartcivic.gov", generate_password_hash("admin123"), "admin", None, "+91 98000 00001", "Smart City Municipal Headquarters", "Ward 42", "en"),
+            (1, "Chief Municipal Commissioner", "admin@smartcivic.gov", generate_password_hash("administration"), "admin", None, "+91 98000 00001", "Smart City Municipal Headquarters", "Ward 42", "en"),
             # 2-7. Department Officers
             (2, "Er. Suresh Verma", "officer.roads@smartcivic.gov", generate_password_hash("officer123"), "officer", 1, "+91 98000 00002", "Zonal Depot 4, Central Corridor", "Ward 42", "en"),
             (3, "Er. Anita Rao", "officer.water@smartcivic.gov", generate_password_hash("officer123"), "officer", 2, "+91 98000 00003", "Water Supply Maintenance Hub, Sector 2", "Ward 12", "en"),
@@ -110,7 +110,9 @@ def seed():
             # 8-10. Citizens
             (8, "Rahul Sharma", "citizen@example.com", generate_password_hash("citizen123"), "citizen", None, "+91 98765 43210", "42 Green Park Residency, Shivajinagar", "Ward 42", "en"),
             (9, "Priya Patel", "priya.patel@example.com", generate_password_hash("citizen123"), "citizen", None, "+91 98123 45678", "B-204 Skyline Towers, Central Avenue", "Ward 12", "kn"),
-            (10, "Arjun Kumar", "arjun.kumar@example.com", generate_password_hash("citizen123"), "citizen", None, "+91 98234 56789", "78 Brigade Cross, Market District", "Ward 42", "en")
+            (10, "Arjun Kumar", "arjun.kumar@example.com", generate_password_hash("citizen123"), "citizen", None, "+91 98234 56789", "78 Brigade Cross, Market District", "Ward 42", "en"),
+            # 11. Dedicated Municipal Administration Account
+            (12, "Municipal Administration Command", "administration@smartcivic.gov", generate_password_hash("administration"), "admin", None, "+91 98000 00000", "Smart City Municipal Headquarters, Central Command", "Ward 42", "en")
         ]
         conn.executemany(
             """

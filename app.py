@@ -89,7 +89,7 @@ def create_app(config_class=Config):
             'all_departments': all_depts,
             'unread_notifications_count': unread_notifications,
             'current_year': datetime.now().year,
-            'app_name': 'Smart CivicCare 2.0'
+            'app_name': 'CivicCare'
         }
 
     # Public Landing Page Route

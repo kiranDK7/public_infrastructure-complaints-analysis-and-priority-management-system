@@ -94,18 +94,19 @@
               <input type="hidden" name="portal_type" value="admin">
 
               <div class="mb-3">
-                <label class="form-label small fw-semibold text-dark">Official Government Email (Username)</label>
+                <label class="form-label small fw-semibold text-dark">Official Government Account (Email / Username)</label>
                 <div class="input-group">
                   <span class="input-group-text bg-light text-warning"><i class="bi bi-person-badge"></i></span>
-                  <input type="email" name="email" id="pageStaffEmail" class="form-control" placeholder="e.g. admin@smartcivic.gov" required>
+                  <input type="text" name="email" id="pageStaffEmail" class="form-control" placeholder="e.g. administration or admin@smartcivic.gov" required>
                 </div>
+                <span class="text-muted" style="font-size: 0.72rem;">You can type username <code>administration</code> or your official email.</span>
               </div>
 
               <div class="mb-4">
                 <label class="form-label small fw-semibold text-dark mb-0">Official Password</label>
                 <div class="input-group">
                   <span class="input-group-text bg-light text-muted"><i class="bi bi-key"></i></span>
-                  <input type="password" name="password" id="pageStaffPassword" class="form-control" placeholder="••••••••" required>
+                  <input type="password" name="password" id="pageStaffPassword" class="form-control" placeholder="Enter password (e.g. administration)" required>
                   <button class="btn btn-outline-secondary" type="button" onclick="togglePassField('pageStaffPassword', 'pageStaffEye')">
                     <i class="bi bi-eye" id="pageStaffEye"></i>
                   </button>
@@ -121,8 +122,8 @@
                 <span class="text-muted small d-block mb-2 font-monospace" style="font-size: 0.72rem;">Authorized Staff One-Click Fills:</span>
                 <div class="row g-2">
                   <div class="col-6">
-                    <button type="button" class="btn btn-sm btn-outline-danger w-100 py-1" style="font-size: 0.72rem;" onclick="submitDemo('pageStaffEmail', 'pageStaffPassword', 'admin@smartcivic.gov', 'admin123', 'staffForm')">
-                      <i class="bi bi-shield-lock me-1"></i>Admin Commissioner
+                    <button type="button" class="btn btn-sm btn-danger w-100 py-1 fw-bold" style="font-size: 0.72rem;" onclick="submitDemo('pageStaffEmail', 'pageStaffPassword', 'administration', 'administration', 'staffForm')">
+                      <i class="bi bi-shield-lock-fill me-1"></i>Administration
                     </button>
                   </div>
                   <div class="col-6">

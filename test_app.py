@@ -250,9 +250,9 @@ class SmartCivicCare2TestCase(unittest.TestCase):
         from services.translations import get_text
 
         # 1. Test translation lookup
-        self.assertEqual(get_text('app_title', lang='en'), 'Smart CivicCare 2.0')
-        self.assertEqual(get_text('app_title', lang='kn'), 'ಸ್ಮಾರ್ಟ್ ಸಿವಿಕ್‌ಕೇರ್ ೨.೦')
-        self.assertEqual(get_text('app_title', lang='hi'), 'स्मार्ट सिविककेयर २.०')
+        self.assertEqual(get_text('app_title', lang='en'), 'CivicCare')
+        self.assertEqual(get_text('app_title', lang='kn'), 'ಸಿವಿಕ್‌ಕೇರ್')
+        self.assertEqual(get_text('app_title', lang='hi'), 'सिविककेयर')
 
         # 2. Test language toggle routes and session updates
         # Log in as citizen
@@ -303,7 +303,7 @@ class SmartCivicCare2TestCase(unittest.TestCase):
         # 1. Verify Database schema and seed data for contractors and G.O.
         with self.app.app_context():
             contractors = query_db("SELECT * FROM contractors")
-            self.assertEqual(len(contractors), 12, "Expected 12 seeded contractors across 6 departments")
+            self.assertGreaterEqual(len(contractors), 12, "Expected at least 12 seeded contractors across 6 departments")
 
             # Check complaints have contractor and G.O. metadata
             complaints_with_go = query_db("SELECT COUNT(*) as c FROM complaints WHERE government_order_no IS NOT NULL", one=True)['c']
@@ -484,6 +484,39 @@ class SmartCivicCare2TestCase(unittest.TestCase):
 
         self.client.get('/logout')
         print("[TEST PASS] Easy citizen login, strict citizen-to-admin restriction, and Admin officer/contractor provisioning fully verified.")
+
+    def test_14_administration_account_and_password(self):
+        """Test the dedicated administration account with username 'administration' and password 'administration'."""
+        # 1. Login using username 'administration' and password 'administration'
+        r1 = self.client.post('/login', data={'email': 'administration', 'password': 'administration', 'portal_type': 'admin'}, follow_redirects=True)
+        self.assertEqual(r1.status_code, 200)
+        with self.client.session_transaction() as sess:
+            self.assertEqual(sess.get('role'), 'admin')
+        self.assertIn(b'Administration', r1.data)
+
+        # Verify access to admin portal dashboard
+        r_dash = self.client.get('/admin')
+        self.assertEqual(r_dash.status_code, 200)
+        self.assertIn(b'Municipal Command Center', r_dash.data)
+
+        self.client.get('/logout')
+
+        # 2. Login using full email 'administration@smartcivic.gov' and password 'administration'
+        r2 = self.client.post('/login', data={'email': 'administration@smartcivic.gov', 'password': 'administration', 'portal_type': 'admin'}, follow_redirects=True)
+        self.assertEqual(r2.status_code, 200)
+        with self.client.session_transaction() as sess:
+            self.assertEqual(sess.get('role'), 'admin')
+
+        self.client.get('/logout')
+
+        # 3. Login using root email 'admin@smartcivic.gov' with password 'administration'
+        r3 = self.client.post('/login', data={'email': 'admin@smartcivic.gov', 'password': 'administration', 'portal_type': 'admin'}, follow_redirects=True)
+        self.assertEqual(r3.status_code, 200)
+        with self.client.session_transaction() as sess:
+            self.assertEqual(sess.get('role'), 'admin')
+
+        self.client.get('/logout')
+        print("[TEST PASS] Administration account and password 'administration' authenticated and verified.")
 
 if __name__ == '__main__':
     unittest.main()

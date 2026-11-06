@@ -15,7 +15,7 @@ TRANSLATIONS = {
     # =========================================================================
     'en': {
         # App Branding
-        'app_title': 'Smart CivicCare 2.0',
+        'app_title': 'CivicCare',
         'app_tagline': 'AI-Powered Public Infrastructure Complaint Analysis and Priority Management System',
         'track_info': 'SMART CITIES • TRACK T1',
         'village_city_care': 'Rural & Urban Civic Care',
@@ -45,7 +45,7 @@ TRANSLATIONS = {
         'submit_banner_title': 'Report Public Infrastructure Problem',
         'submit_banner_subtitle': 'Take a photo, select or speak your problem, and submit directly to the municipal team.',
         'listen_help': 'Audio Guidance',
-        'listen_help_speech': 'Welcome to Smart CivicCare. First, take a live photo of the problem. Second, tap your problem or press the microphone button to speak. Finally, tap the green button to submit your complaint.',
+        'listen_help_speech': 'Welcome to CivicCare. First, take a live photo of the problem. Second, tap your problem or press the microphone button to speak. Finally, tap the green button to submit your complaint.',
         'step_1_num': '1',
         'step_1_short': 'Photo',
         'step_1_short_desc': 'Camera Capture',
@@ -208,7 +208,7 @@ TRANSLATIONS = {
     # =========================================================================
     'kn': {
         # App Branding
-        'app_title': 'ಸ್ಮಾರ್ಟ್ ಸಿವಿಕ್‌ಕೇರ್ ೨.೦',
+        'app_title': 'ಸಿವಿಕ್‌ಕೇರ್',
         'app_tagline': 'ಎಐ ಆಧಾರಿತ ಸಾರ್ವಜನಿಕ ಮೂಲಸೌಕರ್ಯ ದೂರು ವಿಶ್ಲೇಷಣೆ ಮತ್ತು ಆದ್ಯತೆ ನಿರ್ವಹಣಾ ವ್ಯವಸ್ಥೆ',
         'track_info': 'ಸ್ಮಾರ್ಟ್ ಸಿಟಿಗಳು • ಟ್ರ್ಯಾಕ್ ಟಿ೧',
         'village_city_care': 'ಗ್ರಾಮೀಣ ಮತ್ತು ನಗರ ಸೇವೆ',
@@ -238,7 +238,7 @@ TRANSLATIONS = {
         'submit_banner_title': 'ಸಾರ್ವಜನಿಕ ಮೂಲಸೌಕರ್ಯ ಸಮಸ್ಯೆ ವರದಿ ಮಾಡಿ',
         'submit_banner_subtitle': 'ಫೋಟೋ ತೆಗೆಯಿರಿ, ಸಮಸ್ಯೆಯನ್ನು ಆಯ್ಕೆ ಮಾಡಿ ಅಥವಾ ಮಾತನಾಡಿ, ನೇರವಾಗಿ ಇಲಾಖೆಗೆ ಕಳುಹಿಸಿ.',
         'listen_help': 'ಧ್ವನಿ ಸಹಾಯ',
-        'listen_help_speech': 'ಸ್ಮಾರ್ಟ್ ಸಿವಿಕ್‌ಕೇರ್‌ಗೆ ಸ್ವಾಗತ. ಮೊದಲಿಗೆ ಸಮಸ್ಯೆಯ ಲೈವ್ ಫೋಟೋ ತೆಗೆಯಿರಿ. ನಂತರ ಸಮಸ್ಯೆಯ ಕಾರ್ಡ್ ಒತ್ತಿ ಅಥವಾ ಮೈಕ್ ಬಟನ್ ಒತ್ತಿ ಮಾತನಾಡಿ. ಕೊನೆಯಲ್ಲಿ ಹಸಿರು ಬಟನ್ ಒತ್ತಿ ದೂರು ಸಲ್ಲಿಸಿ.',
+        'listen_help_speech': 'ಸಿವಿಕ್‌ಕೇರ್‌ಗೆ ಸ್ವಾಗತ. ಮೊದಲಿಗೆ ಸಮಸ್ಯೆಯ ಲೈವ್ ಫೋಟೋ ತೆಗೆಯಿರಿ. ನಂತರ ಸಮಸ್ಯೆಯ ಕಾರ್ಡ್ ಒತ್ತಿ ಅಥವಾ ಮೈಕ್ ಬಟನ್ ಒತ್ತಿ ಮಾತನಾಡಿ. ಕೊನೆಯಲ್ಲಿ ಹಸಿರು ಬಟನ್ ಒತ್ತಿ ದೂರು ಸಲ್ಲಿಸಿ.',
         'step_1_num': '೧',
         'step_1_short': 'ಫೋಟೋ',
         'step_1_short_desc': 'ಕ್ಯಾಮರಾ ಕ್ಲಿಕ್',
@@ -401,7 +401,7 @@ TRANSLATIONS = {
     # =========================================================================
     'hi': {
         # App Branding
-        'app_title': 'स्मार्ट सिविककेयर २.०',
+        'app_title': 'सिविककेयर',
         'app_tagline': 'एआई संचालित सार्वजनिक बुनियादी ढांचा शिकायत विश्लेषण एवं प्राथमिकता प्रबंधन प्रणाली',
         'track_info': 'स्मार्ट सिटीज • ट्रैक टी१',
         'village_city_care': 'ग्रामीण एवं शहरी जनसेवा',
@@ -431,7 +431,7 @@ TRANSLATIONS = {
         'submit_banner_title': 'सार्वजनिक बुनियादी ढांचा समस्या दर्ज करें',
         'submit_banner_subtitle': 'लाइव फोटो लें, समस्या चुनें या बोलकर बताएं, और सीधे संबंधित विभाग को भेजें।',
         'listen_help': 'ध्वनि सहायता',
-        'listen_help_speech': 'स्मार्ट सिविककेयर में आपका स्वागत है। सबसे पहले समस्या की लाइव फोटो लें। फिर समस्या का कार्ड चुनें या माइक दबाकर बोलें। अंत में हरा बटन दबाकर शिकायत दर्ज करें।',
+        'listen_help_speech': 'सिविककेयर में आपका स्वागत है। सबसे पहले समस्या की लाइव फोटो लें। फिर समस्या का कार्ड चुनें या माइक दबाकर बोलें। अंत में हरा बटन दबाकर शिकायत दर्ज करें।',
         'step_1_num': '१',
         'step_1_short': 'फोटो',
         'step_1_short_desc': 'कैमरा क्लिक',

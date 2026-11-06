@@ -77,7 +77,7 @@ class CivicCareCamera {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
     ctx.fillRect(10, height - 35, 420, 25);
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(`Smart CivicCare Live Proof • ${new Date().toISOString()}`, 15, height - 18);
+    ctx.fillText(`CivicCare Live Proof • ${new Date().toISOString()}`, 15, height - 18);
 
     const dataUrl = this.canvas.toDataURL('image/jpeg', 0.9);
     
@@ -200,7 +200,7 @@ class CivicCareCamera {
           <i class="bi bi-camera-video-off fs-5 text-warning flex-shrink-0"></i>
           <div>
             <strong>Camera Permission Required</strong>
-            <p class="mb-1">Smart CivicCare 2.0 strictly enforces live camera-only evidence to prevent spoofed/gallery uploads.</p>
+            <p class="mb-1">CivicCare strictly enforces live camera-only evidence to prevent spoofed/gallery uploads.</p>
             <button type="button" class="btn btn-sm btn-outline-dark" onclick="window.civicCamera.useSimulatedLiveProof()">
               <i class="bi bi-shield-check me-1"></i>Generate Verified Live Test Evidence
             </button>

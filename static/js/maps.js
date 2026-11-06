@@ -1,5 +1,5 @@
 /**
- * Leaflet.js Map Integration for Smart CivicCare
+ * Leaflet.js Map Integration for CivicCare
  * Red = High Priority, Orange = Medium Priority, Green = Low Priority
  */
 
@@ -52,7 +52,7 @@ function initComplaintsMap(elementId, filterParams = {}) {
   // OpenStreetMap Layer
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
-    attribution: '&copy; OpenStreetMap contributors | Smart CivicCare'
+    attribution: '&copy; OpenStreetMap contributors | CivicCare'
   }).addTo(map);
 
   // Layer group for dynamic updates

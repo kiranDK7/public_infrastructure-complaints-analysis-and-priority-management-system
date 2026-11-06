@@ -1,5 +1,5 @@
 /**
- * Smart CivicCare 2.0 - Multi-Lingual Citizen Accessibility Helper
+ * CivicCare - Multi-Lingual Citizen Accessibility Helper
  * Supports: English ('en'), Kannada ('kn'), Hindi ('hi')
  * Strict Isolation: No mixed languages inside any string.
  */
