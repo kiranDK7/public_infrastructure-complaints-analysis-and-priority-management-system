@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Infrastructure Hotspots &amp; Preventive Maintenance - Smart CivicCare 2.0{% endblock %}
+
+{% block extra_css %}
+<style>
+  #hotspotsMap {
+    height: 380px;
+    border-radius: 12px;
+    z-index: 1;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+
+  <!-- Header -->
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 gap-3">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <span class="badge bg-warning text-dark"><i class="bi bi-geo-alt-fill me-1"></i>Geospatial Hotspots</span>
+        <span class="badge bg-danger text-white">Monsoon Vulnerability Analysis</span>
+      </div>
+      <h3 class="fw-bold text-navy-dark mb-0">Recurring Defect Hotspots &amp; Preventive Maintenance</h3>
+      <p class="text-muted small mb-0">Identifying failure clusters, premature road degradation, and automated preventative maintenance actions.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('forecasting.demand_forecast_view') }}" class="btn btn-outline-info text-navy-dark btn-sm fw-semibold">
+        <i class="bi bi-graph-up-arrow me-1"></i>Demand Forecasting
+      </a>
+      <a href="{{ url_for('departments.all_departments') }}" class="btn btn-civic-navy btn-sm">
+        <i class="bi bi-buildings me-1"></i>Departments
+      </a>
+    </div>
+  </div>
+
+  <!-- Ward Filter Bar -->
+  <div class="civic-card shadow-sm p-3 mb-4">
+    <form method="GET" action="{{ url_for('analytics.hotspots_view') }}" class="row g-2 align-items-center">
+      <div class="col-md-6">
+        <label class="form-label small fw-semibold text-muted mb-1">Filter by Municipal Ward</label>
+        <select name="ward" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="all" {{ 'selected' if selected_ward == 'all' else '' }}>All Municipal Wards (City-Wide)</option>
+          {% for w in wards %}
+            <option value="{{ w }}" {{ 'selected' if selected_ward == w else '' }}>{{ w }} {% if w == 'Ward 42' %}(Monsoon Crisis Focus){% endif %}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <a href="{{ url_for('analytics.hotspots_view') }}" class="btn btn-sm btn-outline-secondary w-100 mt-md-4">
+          Reset Filter
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Interactive Hotspots Map -->
+  <div class="civic-card shadow-sm p-4 mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div>
+        <h5 class="fw-bold text-navy-dark mb-0"><i class="bi bi-map-fill text-danger me-2"></i>Recurring Defect Geospatial Hotspot Map</h5>
+        <span class="small text-muted">Red markers indicate critical recurring clusters requiring structural overhaul.</span>
+      </div>
+      <span class="badge bg-light text-secondary border small">{{ hotspots|length }} Hotspots Mapped</span>
+    </div>
+    <div id="hotspotsMap" class="border"></div>
+  </div>
+
+  <!-- Hotspots Registry Table -->
+  <div class="civic-card shadow-sm p-4 mb-4">
+    <h5 class="fw-bold text-navy-dark mb-3"><i class="bi bi-list-columns-reverse text-teal me-2"></i>Recurring Defect Hotspot Inventory</h5>
+    <div class="table-responsive">
+      <table class="civic-table table small align-middle">
+        <thead>
+          <tr>
+            <th>Corridor / Junction</th>
+            <th>Ward</th>
+            <th>Primary Category</th>
+            <th>Recurrence Count</th>
+            <th>Risk Tier</th>
+            <th>Monsoon Sensitive?</th>
+            <th>Avg. Lifespan</th>
+            <th>Recommended Structural Remedy</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for h in hotspots %}
+            <tr>
+              <td><strong class="text-navy-dark">{{ h.location_name }}</strong></td>
+              <td><span class="text-dark">{{ h.ward_number }}</span></td>
+              <td><span class="badge bg-light text-secondary border">{{ h.category }}</span></td>
+              <td><strong class="text-teal fs-6">{{ h.recurring_incident_count }} Incidents</strong></td>
+              <td>
+                {% if h.risk_level == 'CRITICAL' or h.risk_level == 'HIGH' %}
+                  <span class="badge bg-danger text-white">{{ h.risk_level }}</span>
+                {% else %}
+                  <span class="badge bg-warning text-dark">{{ h.risk_level }}</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if h.is_monsoon_vulnerable %}
+                  <span class="badge bg-danger bg-opacity-25 text-danger fw-bold"><i class="bi bi-cloud-rain me-1"></i>YES</span>
+                {% else %}
+                  <span class="text-muted">Standard</span>
+                {% endif %}
+              </td>
+              <td><span class="text-muted">{{ h.avg_resolution_hours or 24 }}h Avg</span></td>
+              <td><span class="small text-dark">{{ 'Structural overhaul & stormwater desilting' if 'Drainage' in h.category else 'Deep asphalt milling & reinforced base course' }}</span></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Preventive Maintenance Recommendations (Section 9) -->
+  <div class="civic-card shadow-sm p-4 border-warning">
+    <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-shield-check text-warning fs-5"></i>
+        <h5 class="fw-bold text-navy-dark mb-0">Automated Preventive Maintenance Directives</h5>
+      </div>
+      <span class="badge bg-warning text-dark small">Advance Interventions Before Disasters</span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="civic-table table small align-middle">
+        <thead>
+          <tr>
+            <th>Department</th>
+            <th>Action Plan</th>
+            <th>Target Infrastructure</th>
+            <th>Urgency</th>
+            <th>Estimated Cost</th>
+            <th>Seasonal Target Window</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in recommendations %}
+            <tr>
+              <td><strong class="text-navy-dark">{{ r.department_name }}</strong></td>
+              <td>
+                <strong class="text-dark d-block">{{ r.action_title }}</strong>
+                <span class="text-muted">{{ r.action_description }}</span>
+              </td>
+              <td><span class="badge bg-light text-dark border">{{ r.target_infrastructure }}</span></td>
+              <td>
+                {% if r.urgency == 'URGENT' %}
+                  <span class="badge bg-danger text-white">URGENT</span>
+                {% else %}
+                  <span class="badge bg-warning text-dark">SCHEDULED</span>
+                {% endif %}
+              </td>
+              <td><span class="font-monospace text-teal fw-bold">{{ r.estimated_cost_inr }}</span></td>
+              <td><span class="text-muted">{{ r.recommended_timeline }}</span></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var map = L.map('hotspotsMap').setView([12.9716, 77.5946], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    var bounds = [];
+    {% for h in hotspots %}
+      (function() {
+        var lat = {{ h.lat }};
+        var lng = {{ h.lng }};
+        bounds.push([lat, lng]);
+
+        var color = '{{ "#ef4444" if h.risk_level == "HIGH" else ("#f59e0b" if h.risk_level == "MEDIUM" else "#0d9488") }}';
+        var radius = 120;
+
+        // Hotspot Circle Area
+        L.circle([lat, lng], {
+          color: color,
+          fillColor: color,
+          fillOpacity: 0.25,
+          radius: radius
+        }).addTo(map);
+
+        // Marker Pin
+        var icon = L.divIcon({
+          className: 'custom-pin',
+          html: '<div style="background-color:' + color + '; width:16px; height:16px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 6px rgba(0,0,0,0.5);"></div>',
+          iconSize: [16, 16],
+          iconAnchor: [8, 8]
+        });
+
+        L.marker([lat, lng], { icon: icon }).addTo(map)
+          .bindPopup('<strong>{{ h.location_name }}</strong><br><small>{{ h.category }} ({{ h.recurring_incident_count }} incidents)</small><br><span class="badge bg-danger">{{ h.risk_level }} RISK</span>');
+      })();
+    {% endfor %}
+
+    if (bounds.length > 0) {
+      map.fitBounds(bounds, { padding: [30, 30] });
+    }
+  });
+</script>
+{% endblock %}

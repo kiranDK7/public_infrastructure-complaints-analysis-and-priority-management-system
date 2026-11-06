@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+  <rect width="100%" height="100%" fill="#ecfdf5"/>
+  <!-- Park Lawn and Pathway -->
+  <rect x="0" y="200" width="600" height="200" fill="#86efac"/>
+  <rect x="0" y="280" width="600" height="120" fill="#d1d5db"/>
+  <!-- Broken Park Bench -->
+  <rect x="180" y="180" width="16" height="120" fill="#1e293b"/>
+  <rect x="380" y="180" width="16" height="120" fill="#1e293b"/>
+  <!-- Smashed Wooden Slats -->
+  <rect x="160" y="190" width="100" height="15" fill="#92400e" rx="3"/>
+  <path d="M 270 195 L 340 230 L 400 190" stroke="#92400e" stroke-width="12" fill="none"/>
+  <rect x="160" y="220" width="240" height="15" fill="#78350f" rx="3"/>
+  <!-- Splintered wood on ground -->
+  <rect x="260" y="295" width="60" height="10" fill="#92400e" transform="rotate(15 260 295)"/>
+  <!-- Badge -->
+  <rect x="20" y="20" rx="8" width="270" height="40" fill="#0284c7" opacity="0.95"/>
+  <text x="35" y="46" font-family="Arial, sans-serif" font-weight="bold" font-size="16" fill="#ffffff">PARK ASSET VANDALISM</text>
+  <text x="20" y="380" font-family="Arial, sans-serif" font-size="14" fill="#475569">Public Parks &amp; Infrastructure Dept</text>
+</svg>

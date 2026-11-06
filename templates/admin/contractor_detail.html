@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}{{ contractor.name }} - Contractor Dossier - Smart CivicCare 2.0{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Breadcrumb & Navigation -->
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Command Center</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('admin.contractors_list') }}">Contractors</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ contractor.code }}</li>
+      </ol>
+    </nav>
+    <a href="{{ url_for('admin.contractors_list') }}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left me-1"></i>Back to Contractors
+    </a>
+  </div>
+
+  <!-- Contractor Profile & Performance Card -->
+  <div class="civic-card shadow-sm p-4 mb-4">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-7">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span class="badge" style="background-color: {{ contractor.department_color or '#0d9488' }}; color: #fff;">
+            <i class="bi {{ contractor.department_icon or 'bi-building' }} me-1"></i>{{ contractor.department_name }}
+          </span>
+          <span class="badge bg-light text-dark border">{{ contractor.code }}</span>
+          <span class="badge {{ contractor.grade_badge }}">{{ contractor.grade }}</span>
+        </div>
+        <h3 class="fw-bold text-navy-dark mb-1">{{ contractor.name }}</h3>
+        <p class="text-muted small mb-2">Government License: <strong>{{ contractor.license_number }}</strong> &bull; {{ contractor.registration_grade }}</p>
+
+        <div class="row g-2 small text-muted">
+          <div class="col-sm-6">
+            <i class="bi bi-person-fill text-teal me-1"></i>Contact: <strong>{{ contractor.contact_person or 'Head of Operations' }}</strong>
+          </div>
+          <div class="col-sm-6">
+            <i class="bi bi-telephone-fill text-teal me-1"></i>Phone: <strong>{{ contractor.phone or 'N/A' }}</strong>
+          </div>
+          <div class="col-sm-6">
+            <i class="bi bi-envelope-fill text-teal me-1"></i>Email: <strong>{{ contractor.email or 'N/A' }}</strong>
+          </div>
+          <div class="col-sm-6">
+            <i class="bi bi-calendar-check text-teal me-1"></i>Registered Since: <strong>{{ (contractor.created_at|string)[:10] }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Performance Score in Percentage Form & Star Breakdown -->
+      <div class="col-lg-5">
+        <div class="p-3 bg-light rounded-3 border">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="small fw-bold text-muted">Citizen Performance Score:</span>
+            <span class="badge bg-dark font-monospace text-light">Rating Analysis</span>
+          </div>
+
+          <div class="d-flex align-items-baseline gap-2 mb-2">
+            <h1 class="display-5 fw-bold mb-0 text-navy-dark">{{ contractor.performance_percentage }}%</h1>
+            <span class="fs-5 text-warning fw-bold">★ {{ contractor.avg_rating }} / 5.0</span>
+          </div>
+
+          <div class="progress mb-2" style="height: 8px;">
+            <div class="progress-bar {{ 'bg-success' if contractor.performance_percentage >= 88 else ('bg-teal' if contractor.performance_percentage >= 75 else ('bg-warning' if contractor.performance_percentage >= 60 else 'bg-danger')) }}"
+                 style="width: {{ contractor.performance_percentage }}%;"></div>
+          </div>
+          <div class="small text-muted mb-3" style="font-size: 0.75rem;">
+            Calculated from <strong>{{ contractor.total_ratings_count }}</strong> verified citizen ratings on completed tasks.
+          </div>
+
+          <!-- Star Distribution -->
+          <div class="row g-1 text-center small" style="font-size: 0.72rem;">
+            <div class="col">
+              <span class="text-muted d-block">5★</span>
+              <strong class="text-success">{{ contractor.rating_5_count }}</strong>
+            </div>
+            <div class="col">
+              <span class="text-muted d-block">4★</span>
+              <strong class="text-info">{{ contractor.rating_4_count }}</strong>
+            </div>
+            <div class="col">
+              <span class="text-muted d-block">3★</span>
+              <strong class="text-warning">{{ contractor.rating_3_count }}</strong>
+            </div>
+            <div class="col">
+              <span class="text-muted d-block">2★</span>
+              <strong class="text-secondary">{{ contractor.rating_2_count }}</strong>
+            </div>
+            <div class="col">
+              <span class="text-muted d-block">1★</span>
+              <strong class="text-danger">{{ contractor.rating_1_count }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row g-3 mt-3 pt-3 border-top text-center">
+      <div class="col-4 col-md-3">
+        <span class="text-muted small d-block">Total Work Orders:</span>
+        <h4 class="fw-bold text-dark mb-0">{{ contractor.total_tasks }}</h4>
+      </div>
+      <div class="col-4 col-md-3">
+        <span class="text-muted small d-block">Completed &amp; Verified:</span>
+        <h4 class="fw-bold text-success mb-0">{{ contractor.completed_tasks }}</h4>
+      </div>
+      <div class="col-4 col-md-3">
+        <span class="text-muted small d-block">Active In-Progress:</span>
+        <h4 class="fw-bold text-warning mb-0">{{ contractor.active_tasks }}</h4>
+      </div>
+      <div class="col-12 col-md-3">
+        <span class="text-muted small d-block">Total Sanctioned Budget:</span>
+        <h4 class="fw-bold text-navy-dark mb-0">₹{{ "{:,.2f}".format(contractor.total_budget) }}</h4>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assigned Work Orders & G.O. Copy Table -->
+  <div class="civic-card shadow-sm p-4">
+    <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+      <h5 class="fw-bold text-navy-dark mb-0"><i class="bi bi-file-earmark-text text-teal me-2"></i>Work Orders &amp; Government Orders List</h5>
+      <span class="small text-muted">{{ work_orders|length }} records found</span>
+    </div>
+
+    {% if work_orders %}
+      <div class="table-responsive">
+        <table class="civic-table table align-middle">
+          <thead>
+            <tr>
+              <th>Ticket &amp; Date</th>
+              <th>Task Description</th>
+              <th>Supervising Engineer</th>
+              <th>Sanctioned Budget</th>
+              <th>Government Order (G.O.)</th>
+              <th>Citizen Review</th>
+              <th>Status</th>
+              <th>Official Order</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for w in work_orders %}
+              <tr>
+                <td>
+                  <a href="{{ url_for('citizen.complaint_detail', complaint_id=w.id) }}" class="fw-bold text-teal text-decoration-none font-monospace small">
+                    #{{ w.ticket_id }}
+                  </a>
+                  <div class="text-muted" style="font-size: 0.7rem;">{{ (w.created_at|string)[:10] }}</div>
+                </td>
+                <td>
+                  <strong class="text-dark d-block text-truncate" style="max-width: 220px;" title="{{ w.title }}">{{ w.title }}</strong>
+                  <div class="small text-muted">{{ w.ward_number }} &bull; {{ w.severity }}</div>
+                </td>
+                <td>
+                  <div class="small fw-semibold text-dark">{{ w.engineer_name or 'Er. Assigned, AEE' }}</div>
+                  <div class="text-muted" style="font-size: 0.68rem;">Supervising Officer</div>
+                </td>
+                <td>
+                  <strong class="text-dark font-monospace">₹{{ "{:,.0f}".format(w.budget_allocated or 25000) }}</strong>
+                  <div class="text-muted" style="font-size: 0.68rem;">Sanctioned Cost</div>
+                </td>
+                <td>
+                  <span class="badge bg-light text-dark border font-monospace" style="font-size: 0.72rem;">
+                    {{ w.government_order_no or 'GO-BBMP-2026-PENDING' }}
+                  </span>
+                  <div class="text-muted" style="font-size: 0.68rem;">Date: {{ w.government_order_date or (w.created_at|string)[:10] }}</div>
+                </td>
+                <td>
+                  {% if w.citizen_rating %}
+                    <div class="d-flex align-items-center gap-1 text-warning fw-bold">
+                      <span>★ {{ w.citizen_rating }}.0</span>
+                      <span class="badge bg-success text-white" style="font-size: 0.65rem;">{{ (w.citizen_rating / 5 * 100)|int }}%</span>
+                    </div>
+                    {% if w.citizen_feedback %}
+                      <div class="text-muted small text-truncate" style="max-width: 150px; font-size: 0.68rem;" title="{{ w.citizen_feedback }}">
+                        "{{ w.citizen_feedback }}"
+                      </div>
+                    {% endif %}
+                  {% else %}
+                    <span class="text-muted small">Pending review</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% set s_clean = w.status|lower|replace(' ', '-') %}
+                  <span class="status-badge status-badge-{{ s_clean }}" style="font-size: 0.72rem;">
+                    {{ w.status }}
+                  </span>
+                </td>
+                <td>
+                  <a href="{{ url_for('admin.view_government_order', complaint_id=w.id) }}" target="_blank" class="btn btn-sm btn-outline-teal fw-semibold py-1 px-2" style="font-size: 0.75rem;">
+                    <i class="bi bi-file-earmark-pdf me-1"></i>View G.O. Copy
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-muted text-center py-4 mb-0">No work orders currently assigned to this contractor.</p>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+

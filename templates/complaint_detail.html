@@ -1,0 +1,440 @@
+{% extends "base.html" %}
+
+{% block title %}Ticket #{{ complaint.ticket_id }} - Smart CivicCare{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Header & Navigation -->
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 gap-3">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1 small">
+          <li class="breadcrumb-item">
+            {% if current_user.role == 'admin' %}
+              <a href="{{ url_for('admin.complaints_list') }}" class="text-decoration-none">Complaints</a>
+            {% elif current_user.role == 'officer' %}
+              <a href="{{ url_for('officer.dashboard') }}" class="text-decoration-none">Workspace</a>
+            {% else %}
+              <a href="{{ url_for('citizen.my_complaints') }}" class="text-decoration-none">My Complaints</a>
+            {% endif %}
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">{{ complaint.ticket_id }}</li>
+        </ol>
+      </nav>
+      <div class="d-flex align-items-center gap-2">
+        <h3 class="fw-bold text-navy-dark mb-0">Ticket #{{ complaint.ticket_id }}</h3>
+        {% if complaint.priority == 'HIGH' %}
+          <span class="badge badge-priority-high">HIGH PRIORITY</span>
+        {% elif complaint.priority == 'MEDIUM' %}
+          <span class="badge badge-priority-medium">MEDIUM</span>
+        {% else %}
+          <span class="badge badge-priority-low">LOW</span>
+        {% endif %}
+
+        {% set s = complaint.status %}
+        <span class="badge badge-status 
+          {% if s == 'Submitted' %}badge-status-submitted
+          {% elif s == 'Under Review' %}badge-status-under-review
+          {% elif s == 'Assigned' %}badge-status-assigned
+          {% elif s == 'In Progress' %}badge-status-in-progress
+          {% elif s == 'Resolved' %}badge-status-resolved
+          {% else %}badge-status-rejected{% endif %}">
+          {{ s }}
+        </span>
+
+        {% if complaint.is_duplicate %}
+          <span class="badge bg-warning text-dark"><i class="bi bi-link-45deg me-1"></i>Duplicate</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Action Buttons for Admin & Officer -->
+    <div class="d-flex flex-wrap gap-2">
+      {% if current_user.role == 'admin' %}
+        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#assignModal">
+          <i class="bi bi-person-plus me-1"></i>Assign Department
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#overridePriorityModal">
+          <i class="bi bi-sliders me-1"></i>Override Priority
+        </button>
+      {% elif current_user.role == 'officer' %}
+        <button type="button" class="btn btn-sm btn-civic-teal" data-bs-toggle="modal" data-bs-target="#updateStatusModal">
+          <i class="bi bi-pencil-square me-1"></i>Update Status &amp; Upload Proof
+        </button>
+      {% endif %}
+      
+      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+        <i class="bi bi-printer me-1"></i>Print Report
+      </button>
+    </div>
+  </div>
+
+  <!-- Stepper / Resolution Progress Bar -->
+  <div class="civic-card p-4 mb-4">
+    <h6 class="fw-bold text-navy-dark mb-3"><i class="bi bi-diagram-3 me-1 text-teal"></i>Resolution Lifecycle Tracker</h6>
+    
+    {% set status_order = ['Submitted', 'Under Review', 'Assigned', 'In Progress', 'Resolved'] %}
+    {% set current_idx = 0 %}
+    {% if complaint.status == 'Under Review' %}{% set current_idx = 1 %}
+    {% elif complaint.status == 'Assigned' %}{% set current_idx = 2 %}
+    {% elif complaint.status == 'In Progress' %}{% set current_idx = 3 %}
+    {% elif complaint.status == 'Resolved' %}{% set current_idx = 4 %}
+    {% endif %}
+
+    <div class="d-none d-md-flex align-items-center justify-content-between position-relative px-4 py-2">
+      <div class="progress position-absolute w-100 start-0" style="height: 4px; z-index: 1;">
+        <div class="progress-bar bg-teal" role="progressbar" style="width: {{ (current_idx / 4) * 100 }}%;"></div>
+      </div>
+      
+      {% for st in status_order %}
+        {% set step_idx = loop.index0 %}
+        <div class="position-relative text-center" style="z-index: 2;">
+          <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1 fw-bold shadow-sm"
+               style="width: 32px; height: 32px; font-size: 0.8rem;
+               background-color: {{ '#0d9488' if step_idx <= current_idx else '#e2e8f0' }};
+               color: {{ '#ffffff' if step_idx <= current_idx else '#64748b' }};">
+            {% if step_idx < current_idx %}
+              <i class="bi bi-check"></i>
+            {% else %}
+              {{ loop.index }}
+            {% endif %}
+          </div>
+          <span class="small fw-semibold {{ 'text-teal fw-bold' if step_idx == current_idx else ('text-dark' if step_idx < current_idx else 'text-muted') }}">
+            {{ st }}
+          </span>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Mobile view of status -->
+    <div class="d-md-none text-center py-2">
+      <span class="badge bg-teal p-2 fs-6">{{ complaint.status }}</span>
+      <div class="small text-muted mt-1">Stage {{ current_idx + 1 }} of 5 in municipal resolution workflow</div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Left Column: Details, Photos, Map -->
+    <div class="col-lg-8">
+      
+      <!-- Primary Details Card -->
+      <div class="civic-card mb-4">
+        <h4 class="fw-bold text-navy-dark mb-2">{{ complaint.title }}</h4>
+        <div class="d-flex flex-wrap gap-2 align-items-center text-muted small mb-3">
+          <span><i class="bi bi-tag text-teal me-1"></i>{{ complaint.category }}</span>
+          <span>•</span>
+          <span><i class="bi bi-calendar3 me-1"></i>{{ complaint.created_at }}</span>
+          <span>•</span>
+          <span><i class="bi bi-geo-alt text-danger me-1"></i>{{ complaint.address or 'Address on map' }}</span>
+        </div>
+
+        <div class="p-3 bg-light rounded-3 mb-4">
+          <h6 class="fw-bold text-dark small mb-1">Citizen Problem Statement:</h6>
+          <p class="text-secondary small mb-0 lh-base">{{ complaint.description }}</p>
+        </div>
+
+        <!-- Before & After Photo Comparison -->
+        <h6 class="fw-bold text-navy-dark mb-3"><i class="bi bi-images me-1 text-teal"></i>Photographic Evidence Documentation</h6>
+        <div class="row g-3 mb-4">
+          <!-- Citizen Uploaded Photo -->
+          <div class="col-sm-6">
+            <div class="border rounded p-2 text-center bg-light h-100">
+              <span class="badge bg-danger mb-2 d-inline-block">REPORTED HAZARD (BEFORE)</span>
+              {% if complaint.photo_path %}
+                <img src="{{ url_for('static', filename=complaint.photo_path) }}" class="img-fluid rounded border w-100" style="height: 200px; object-fit: cover;" alt="Reported photo">
+              {% else %}
+                <div class="py-5 text-muted small"><i class="bi bi-image fs-1 d-block"></i>No photograph provided</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Officer Resolution Photo -->
+          <div class="col-sm-6">
+            <div class="border rounded p-2 text-center bg-light h-100">
+              <span class="badge bg-success mb-2 d-inline-block">OFFICIAL RESOLUTION (AFTER)</span>
+              {% if complaint.resolution_photo_path %}
+                <img src="{{ url_for('static', filename=complaint.resolution_photo_path) }}" class="img-fluid rounded border w-100" style="height: 200px; object-fit: cover;" alt="Resolution photo">
+                <div class="small text-success fw-semibold mt-2"><i class="bi bi-check-circle me-1"></i>Resolved on {{ complaint.resolved_at }}</div>
+              {% else %}
+                <div class="py-5 text-muted small">
+                  <i class="bi bi-hourglass-split fs-1 d-block text-secondary"></i>
+                  Pending completion photograph by assigned field officer
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Resolution Notes if Resolved -->
+        {% if complaint.resolution_notes %}
+          <div class="alert alert-success border-0 shadow-sm p-3 mb-4">
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <i class="bi bi-patch-check-fill fs-5 text-success"></i>
+              <strong class="text-success">Department Resolution Remarks</strong>
+            </div>
+            <p class="small text-dark mb-0">{{ complaint.resolution_notes }}</p>
+          </div>
+        {% endif %}
+
+        <!-- Location Map Pin -->
+        <h6 class="fw-bold text-navy-dark mb-2"><i class="bi bi-map me-1 text-teal"></i>Geographical Coordinate Telemetry</h6>
+        <div id="singleMap" style="height: 240px; border-radius: 8px; border: 1px solid var(--civic-border);" class="mb-2"></div>
+        <div class="d-flex justify-content-between small text-muted">
+          <span>Lat: {{ complaint.latitude }}, Lng: {{ complaint.longitude }}</span>
+          <span>Landmark: {{ complaint.landmark or 'Not specified' }}</span>
+        </div>
+
+      </div>
+
+      <!-- Audit History / Status Log -->
+      <div class="civic-card">
+        <h5 class="fw-bold text-navy-dark mb-3"><i class="bi bi-clock-history me-1 text-teal"></i>Lifecycle Audit Trail</h5>
+        <div class="status-timeline">
+          {% for h in history %}
+            <div class="timeline-step">
+              <div class="timeline-marker done"><i class="bi bi-check"></i></div>
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="fw-bold small text-dark">
+                  {{ h.new_status }}
+                  <span class="text-muted fw-normal" style="font-size: 0.75rem;">by {{ h.changed_by_name }} ({{ h.changed_by_role|capitalize }})</span>
+                </span>
+                <small class="text-muted" style="font-size: 0.72rem;">{{ h.created_at }}</small>
+              </div>
+              <p class="small text-secondary mb-0" style="font-size: 0.8rem;">{{ h.remarks }}</p>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: AI Analysis & Department Assignment -->
+    <div class="col-lg-4">
+
+      <!-- AI Analysis Insights Card -->
+      <div class="civic-card ai-insight-box mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <span class="ai-badge"><i class="bi bi-cpu-fill"></i> AI Triage Analysis</span>
+          <span class="badge bg-light text-secondary border">Explainable AI</span>
+        </div>
+
+        <div class="mb-3">
+          <label class="small text-muted d-block mb-1">Predicted Category Match</label>
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="fw-bold text-dark small">{{ complaint.ai_predicted_category or complaint.category }}</span>
+            <span class="badge bg-teal bg-opacity-25 text-teal">{{ (complaint.ai_category_confidence * 100)|round|int }}% Confidence</span>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="small text-muted d-block mb-1">Calculated Priority Risk Score</label>
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="fw-bold text-dark fs-5">{{ complaint.ai_priority_score }}/100</span>
+            <span class="badge {{ 'badge-priority-high' if complaint.priority == 'HIGH' else ('badge-priority-medium' if complaint.priority == 'MEDIUM' else 'badge-priority-low') }}">
+              {{ complaint.priority }}
+            </span>
+          </div>
+          <div class="progress" style="height: 6px;">
+            <div class="progress-bar {{ 'bg-danger' if complaint.ai_priority_score >= 65 else ('bg-warning' if complaint.ai_priority_score >= 35 else 'bg-success') }}"
+                 role="progressbar" style="width: {{ complaint.ai_priority_score }}%;"></div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="small text-muted d-block mb-1">AI Rationale Summary</label>
+          <p class="small text-secondary mb-0 bg-white p-2 rounded border" style="font-size: 0.78rem;">
+            {{ complaint.ai_priority_explanation or "Multi-factor assessment based on keyword severity triggers, municipal hazard base, and demographic impact." }}
+          </p>
+        </div>
+
+        {% if complaint.admin_override %}
+          <div class="p-2 rounded bg-warning bg-opacity-15 border border-warning text-warning small mt-2">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i><strong>Admin Override:</strong> Priority was adjusted manually by municipal administration.
+          </div>
+        {% endif %}
+
+        {% if complaint.is_duplicate %}
+          <div class="p-2 rounded bg-info bg-opacity-15 border border-info text-info small mt-2">
+            <i class="bi bi-info-circle-fill me-1"></i><strong>Linked Duplicate:</strong> Matched to Ticket #{{ complaint.duplicate_ticket_title or complaint.duplicate_of_id }} within proximity radius.
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Department & Officer Assignment Box -->
+      <div class="civic-card mb-4">
+        <h6 class="fw-bold text-navy-dark mb-3"><i class="bi bi-building me-1 text-teal"></i>Assignment Telemetry</h6>
+        
+        <div class="mb-3">
+          <label class="small text-muted d-block">Handling Department</label>
+          <span class="fw-bold text-dark small d-block">
+            {{ complaint.department_name or 'Pending Municipal Assignment' }}
+          </span>
+          {% if complaint.department_code %}
+            <span class="badge bg-light text-secondary border mt-1">{{ complaint.department_code }}</span>
+          {% endif %}
+        </div>
+
+        <div class="mb-3">
+          <label class="small text-muted d-block">Field Officer Assigned</label>
+          <span class="fw-semibold text-dark small d-block">
+            {{ complaint.officer_name or 'Unassigned' }}
+          </span>
+          {% if complaint.officer_email %}
+            <span class="small text-muted">{{ complaint.officer_email }}</span>
+          {% endif %}
+        </div>
+
+        <div class="border-top pt-2">
+          <label class="small text-muted d-block">Reporting Citizen</label>
+          <span class="fw-semibold text-dark small d-block">{{ complaint.citizen_name }}</span>
+          {% if current_user.role in ['admin', 'officer'] %}
+            <span class="small text-muted d-block">{{ complaint.citizen_phone or 'No phone provided' }}</span>
+            <span class="small text-muted d-block">{{ complaint.citizen_email }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- Admin: Assign Department Modal -->
+{% if current_user.role == 'admin' %}
+<div class="modal fade" id="assignModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('admin.assign_complaint', complaint_id=complaint.id) }}">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Assign Department &amp; Officer</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Select Department *</label>
+            <select name="department_id" class="form-select" required>
+              <option value="" disabled>-- Select Department --</option>
+              {% for d in departments %}
+                <option value="{{ d.id }}" {% if complaint.assigned_department_id == d.id %}selected{% endif %}>
+                  {{ d.name }} ({{ d.code }})
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Assign Specific Officer (Optional)</label>
+            <select name="officer_id" class="form-select">
+              <option value="">-- Let Department Head Dispatch --</option>
+              {% for o in officers %}
+                <option value="{{ o.id }}" {% if complaint.assigned_officer_id == o.id %}selected{% endif %}>
+                  {{ o.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Assignment Remarks / Instructions</label>
+            <textarea name="notes" rows="2" class="form-control" placeholder="Specific instructions for field crew..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-civic-teal btn-sm">Confirm Assignment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Admin: Override Priority Modal -->
+<div class="modal fade" id="overridePriorityModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('admin.override_priority', complaint_id=complaint.id) }}">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Administrative Priority Override</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="small text-muted">
+            The AI Priority Engine calculated this issue as <strong>{{ complaint.ai_predicted_priority or complaint.priority }}</strong> (Risk Score: {{ complaint.ai_priority_score }}/100). As administrator, you can override this based on on-ground conditions.
+          </p>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">New Priority Level *</label>
+            <select name="priority" class="form-select" required>
+              {% for p in priorities %}
+                <option value="{{ p }}" {% if complaint.priority == p %}selected{% endif %}>{{ p }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Override Justification *</label>
+            <textarea name="reason" rows="2" class="form-control" placeholder="Reason for changing automated priority..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-warning btn-sm fw-bold">Apply Priority Override</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Officer: Update Status Modal -->
+{% if current_user.role in ['officer', 'admin'] %}
+<div class="modal fade" id="updateStatusModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('officer.update_status', complaint_id=complaint.id) }}" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Update Resolution Status</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">New Status *</label>
+            <select name="status" class="form-select" required>
+              {% for st in statuses %}
+                <option value="{{ st }}" {% if complaint.status == st %}selected{% endif %}>{{ st }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Upload Resolution / Completion Photo</label>
+            <input type="file" name="resolution_photo" class="form-control" accept="image/*">
+            <div class="form-text small">Required for 'Resolved' status to verify completed repair work.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Officer Work Remarks *</label>
+            <textarea name="remarks" rows="3" class="form-control" placeholder="Action taken, materials used, field team notes..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-civic-teal btn-sm">Save Status Update</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    initSingleComplaintMap('singleMap', {{ complaint.latitude }}, {{ complaint.longitude }}, '{{ complaint.priority }}', '{{ complaint.title|replace("'", "\\'") }}');
+  });
+</script>
+{% endblock %}
+

@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}My Infrastructure Complaints - Smart CivicCare 2.0{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Header -->
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 gap-3">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb small mb-1">
+          <li class="breadcrumb-item"><a href="{{ url_for('citizen.dashboard') }}" class="text-teal text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item active">My Complaints</li>
+        </ol>
+      </nav>
+      <h3 class="fw-bold text-navy-dark mb-0">My Complaint Directory</h3>
+      <p class="text-muted small mb-0">Comprehensive record of reported civic defects, repair progress, and citizen verifications.</p>
+    </div>
+    <div>
+      <a href="{{ url_for('citizen.submit_complaint') }}" class="btn btn-civic-teal btn-sm fw-bold">
+        <i class="bi bi-camera-fill me-1"></i>Report New Issue
+      </a>
+    </div>
+  </div>
+
+  <!-- Filters Bar -->
+  <div class="civic-card shadow-sm p-3 mb-4">
+    <form method="GET" action="{{ url_for('citizen.my_complaints') }}" class="row g-2 align-items-center">
+      <div class="col-md-5">
+        <label class="form-label small fw-semibold text-muted mb-1">Status Filter</label>
+        <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="all" {{ 'selected' if status_filter == 'all' else '' }}>All Statuses (13 Stages)</option>
+          {% for st in statuses %}
+            <option value="{{ st }}" {{ 'selected' if status_filter == st else '' }}>{{ st }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-5">
+        <label class="form-label small fw-semibold text-muted mb-1">Category Filter</label>
+        <select name="category" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="all" {{ 'selected' if category_filter == 'all' else '' }}>All 6 Municipal Categories</option>
+          {% for cat in categories %}
+            <option value="{{ cat }}" {{ 'selected' if category_filter == cat else '' }}>{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2 d-flex align-items-end">
+        <a href="{{ url_for('citizen.my_complaints') }}" class="btn btn-sm btn-outline-secondary w-100 mt-md-4">
+          <i class="bi bi-x-circle me-1"></i>Clear
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Complaints Table / List -->
+  <div class="civic-card shadow-sm p-4">
+    {% if complaints %}
+      <div class="table-responsive">
+        <table class="civic-table table align-middle">
+          <thead>
+            <tr>
+              <th>Ticket ID &amp; Date</th>
+              <th>Problem Description</th>
+              <th>Category &amp; Department</th>
+              <th>Ward &amp; Location</th>
+              <th>Priority</th>
+              <th>Status (13 Stages)</th>
+              <th class="text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in complaints %}
+              <tr>
+                <td>
+                  <a href="{{ url_for('citizen.complaint_detail', complaint_id=c.id) }}" class="fw-bold text-teal text-decoration-none font-monospace">
+                    #{{ c.ticket_id }}
+                  </a>
+                  <div class="text-muted" style="font-size: 0.72rem;">{{ (c.created_at|string)[:10] }}</div>
+                </td>
+                <td>
+                  <strong class="text-dark d-block text-truncate" style="max-width: 220px;">{{ c.title }}</strong>
+                  <small class="text-muted text-truncate d-block" style="max-width: 220px;">{{ c.description }}</small>
+                </td>
+                <td>
+                  <div class="small fw-semibold text-navy-dark">{{ c.category }}</div>
+                  <span class="badge" style="background-color: {{ c.department_color or '#0d9488' }}; color: #fff; font-size: 0.68rem;">
+                    {{ c.department_name or 'Unassigned' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="small fw-semibold text-dark">{{ c.ward_number }}</div>
+                  <small class="text-muted text-truncate d-block" style="max-width: 140px;">{{ c.address }}</small>
+                </td>
+                <td>
+                  {% if c.priority == 'HIGH' %}
+                    <span class="badge badge-priority-high">HIGH</span>
+                  {% elif c.priority == 'MEDIUM' %}
+                    <span class="badge badge-priority-medium">MEDIUM</span>
+                  {% else %}
+                    <span class="badge badge-priority-low">LOW</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% set s_clean = c.status|lower|replace(' ', '-') %}
+                  <span class="status-badge status-badge-{{ s_clean }}">
+                    {{ c.status }}
+                  </span>
+                </td>
+                <td class="text-end">
+                  {% if c.status == 'AWAITING CITIZEN VERIFICATION' %}
+                    <a href="{{ url_for('citizen.complaint_detail', complaint_id=c.id) }}" class="btn btn-sm btn-warning text-dark fw-bold px-3 py-1">
+                      <i class="bi bi-star-fill me-1"></i>Verify
+                    </a>
+                  {% else %}
+                    <a href="{{ url_for('citizen.complaint_detail', complaint_id=c.id) }}" class="btn btn-sm btn-outline-secondary px-3 py-1">
+                      View Details &rarr;
+                    </a>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-inbox fs-1 text-teal d-block mb-2"></i>
+        <h6 class="fw-bold text-navy-dark">No Complaints Match Filter</h6>
+        <p class="small mb-3">No complaints found with selected criteria. Try resetting the status or category filter.</p>
+        <a href="{{ url_for('citizen.my_complaints') }}" class="btn btn-sm btn-outline-secondary">Reset Filters</a>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+

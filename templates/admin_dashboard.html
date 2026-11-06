@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Command Center - Smart CivicCare{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+
+  <!-- Admin Header Bar -->
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 gap-3">
+    <div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-50">ADMINISTRATIVE COMMAND</span>
+        <span class="small text-muted"><i class="bi bi-clock me-1"></i>Live Telemetry</span>
+      </div>
+      <h3 class="fw-bold text-navy-dark mb-0">Smart City Municipal Operations Center</h3>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{{ url_for('admin.complaints_list') }}" class="btn btn-sm btn-civic-teal shadow-sm">
+        <i class="bi bi-table me-1"></i>Manage All Complaints
+      </a>
+      <a href="{{ url_for('admin.ai_intelligence') }}" class="btn btn-sm btn-outline-info">
+        <i class="bi bi-cpu-fill me-1"></i>AI Intelligence Center
+      </a>
+      <a href="{{ url_for('admin.users_list') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-people me-1"></i>Users Directory
+      </a>
+    </div>
+  </div>
+
+  <!-- 6 Top Level KPI Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-2">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">Total Citizens</div>
+          <div class="kpi-value">{{ total_citizens }}</div>
+          <div class="kpi-sub">Verified voters</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-blue"><i class="bi bi-people-fill"></i></div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-2">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">Total Complaints</div>
+          <div class="kpi-value">{{ total_complaints }}</div>
+          <div class="kpi-sub">Logged city-wide</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-teal"><i class="bi bi-folder2-open"></i></div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-2">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">Pending Triage</div>
+          <div class="kpi-value text-purple" style="color: #7c3aed;">{{ pending_complaints }}</div>
+          <div class="kpi-sub">Needs assignment</div>
+        </div>
+        <div class="kpi-icon-bubble" style="background:#ede9fe; color:#6d28d9;"><i class="bi bi-hourglass-top"></i></div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-2">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">High Priority</div>
+          <div class="kpi-value text-danger">{{ high_priority_complaints }}</div>
+          <div class="kpi-sub">Acute safety threats</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-red"><i class="bi bi-exclamation-triangle-fill"></i></div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-2">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">Resolved Issues</div>
+          <div class="kpi-value text-success">{{ resolved_complaints }}</div>
+          <div class="kpi-sub">Inspected &amp; closed</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-green"><i class="bi bi-check2-all"></i></div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-2">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">Avg SLA Turnaround</div>
+          <div class="kpi-value" style="font-size: 1.6rem; color: var(--civic-teal);">{{ avg_resolution_hours }}h</div>
+          <div class="kpi-sub">Creation to resolution</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-teal"><i class="bi bi-stopwatch-fill"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Map & Priority Hotspot Overview -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-8">
+      <div class="civic-card p-3 h-100">
+        <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between mb-3 gap-2">
+          <div>
+            <h5 class="fw-bold text-navy-dark mb-0">City-Wide Interactive Geospatial Map</h5>
+            <span class="small text-muted">GPS pin clustering with priority-based color coding</span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge badge-priority-high"><i class="bi bi-circle-fill me-1"></i>Red: High</span>
+            <span class="badge badge-priority-medium"><i class="bi bi-circle-fill me-1"></i>Orange: Med</span>
+            <span class="badge badge-priority-low"><i class="bi bi-circle-fill me-1"></i>Green: Low</span>
+          </div>
+        </div>
+        <div id="adminComplaintsMap" class="civic-map-container" style="height: 480px;"></div>
+      </div>
+    </div>
+
+    <!-- Chart: Category Breakdown Doughnut -->
+    <div class="col-lg-4">
+      <div class="civic-card p-3 h-100 d-flex flex-column">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h6 class="fw-bold text-navy-dark mb-0">Categories Breakdown</h6>
+          <span class="ai-badge" style="font-size: 0.65rem;">NLP Sorted</span>
+        </div>
+        <p class="small text-muted mb-3">Complaints categorized by NLP machine learning</p>
+        <div class="flex-grow-1" style="min-height: 250px; position: relative;">
+          <canvas id="chartCategory"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2 Charts: Priority & Department SLA -->
+  <div class="row g-4 mb-4">
+    <div class="col-md-4">
+      <div class="civic-card p-3 h-100">
+        <h6 class="fw-bold text-navy-dark mb-1">Priority Risk Distribution</h6>
+        <p class="small text-muted mb-3">Computed by Smart Priority Engine (0-100)</p>
+        <div style="height: 220px; position: relative;">
+          <canvas id="chartPriority"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="civic-card p-3 h-100">
+        <h6 class="fw-bold text-navy-dark mb-1">Status Workflow Distribution</h6>
+        <p class="small text-muted mb-3">Active stage progression</p>
+        <div style="height: 220px; position: relative;">
+          <canvas id="chartStatus"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="civic-card p-3 h-100">
+        <h6 class="fw-bold text-navy-dark mb-1">Department Performance</h6>
+        <p class="small text-muted mb-3">Assigned Work vs Completed Resolutions</p>
+        <div style="height: 220px; position: relative;">
+          <canvas id="chartDepartment"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Department Operations Table -->
+  <div class="civic-card mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div>
+        <h5 class="fw-bold text-navy-dark mb-0">Municipal Department Performance Matrix</h5>
+        <span class="small text-muted">Zonal department dispatch and resolution compliance rates</span>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="civic-table table">
+        <thead>
+          <tr>
+            <th>Department</th>
+            <th>Code</th>
+            <th>Contact</th>
+            <th>Total Assigned</th>
+            <th>Active Work</th>
+            <th>Resolved</th>
+            <th>Resolution Rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in departments %}
+            {% set rate = ((d.total_resolved / d.total_assigned) * 100)|round|int if d.total_assigned > 0 else 0 %}
+            <tr>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi {{ d.icon }} text-teal fs-5"></i>
+                  <div>
+                    <span class="fw-bold text-dark d-block">{{ d.name }}</span>
+                    <small class="text-muted" style="font-size: 0.72rem;">{{ d.description[:45] }}...</small>
+                  </div>
+                </div>
+              </td>
+              <td><span class="badge bg-light text-secondary border fw-bold">{{ d.code }}</span></td>
+              <td class="small text-muted">{{ d.contact_email }}</td>
+              <td class="fw-bold">{{ d.total_assigned }}</td>
+              <td>
+                <span class="badge bg-warning bg-opacity-25 text-warning">{{ d.active_work }} in progress</span>
+              </td>
+              <td>
+                <span class="badge bg-success bg-opacity-25 text-success">{{ d.total_resolved }} resolved</span>
+              </td>
+              <td style="min-width: 140px;">
+                <div class="d-flex align-items-center gap-2">
+                  <div class="progress flex-grow-1" style="height: 6px;">
+                    <div class="progress-bar bg-teal" role="progressbar" style="width: {{ rate }}%;"></div>
+                  </div>
+                  <span class="small fw-bold text-dark">{{ rate }}%</span>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent Complaints Table with Instant Assign Action -->
+  <div class="civic-card">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div>
+        <h5 class="fw-bold text-navy-dark mb-0">Recent Complaints Queue</h5>
+        <span class="small text-muted">Latest submissions requiring triage and administrative review</span>
+      </div>
+      <a href="{{ url_for('admin.complaints_list') }}" class="btn btn-sm btn-outline-secondary">View All &rarr;</a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="civic-table table">
+        <thead>
+          <tr>
+            <th>Ticket</th>
+            <th>Citizen</th>
+            <th>Title &amp; Category</th>
+            <th>Priority</th>
+            <th>Department</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for comp in recent_complaints %}
+            <tr>
+              <td class="fw-bold text-dark">{{ comp.ticket_id }}</td>
+              <td>
+                <span class="d-block fw-semibold small text-dark">{{ comp.citizen_name }}</span>
+                <small class="text-muted" style="font-size: 0.7rem;">{{ (comp.created_at|string)[:10] }}</small>
+              </td>
+              <td>
+                <a href="{{ url_for('citizen.complaint_detail', complaint_id=comp.id) }}" class="text-decoration-none fw-semibold text-dark hover-teal d-block text-truncate" style="max-width: 260px;">
+                  {{ comp.title }}
+                </a>
+                <span class="badge bg-light text-secondary border" style="font-size: 0.7rem;">{{ comp.category }}</span>
+              </td>
+              <td>
+                {% if comp.priority == 'HIGH' %}
+                  <span class="badge badge-priority-high">HIGH</span>
+                {% elif comp.priority == 'MEDIUM' %}
+                  <span class="badge badge-priority-medium">MEDIUM</span>
+                {% else %}
+                  <span class="badge badge-priority-low">LOW</span>
+                {% endif %}
+              </td>
+              <td class="small">{{ comp.department_name or '<span class="text-danger fw-semibold">Unassigned</span>'|safe }}</td>
+              <td>
+                {% set s = comp.status %}
+                <span class="badge badge-status 
+                  {% if s == 'Submitted' %}badge-status-submitted
+                  {% elif s == 'Under Review' %}badge-status-under-review
+                  {% elif s == 'Assigned' %}badge-status-assigned
+                  {% elif s == 'In Progress' %}badge-status-in-progress
+                  {% elif s == 'Resolved' %}badge-status-resolved
+                  {% else %}badge-status-rejected{% endif %}">
+                  {{ s }}
+                </span>
+              </td>
+              <td>
+                <a href="{{ url_for('citizen.complaint_detail', complaint_id=comp.id) }}" class="btn btn-sm btn-outline-teal py-0 px-2" style="font-size: 0.8rem;">
+                  Manage
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    initComplaintsMap('adminComplaintsMap');
+  });
+</script>
+{% endblock %}

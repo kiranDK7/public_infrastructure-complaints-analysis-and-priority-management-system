@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}User Directory - Smart CivicCare Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 gap-3">
+    <div>
+      <h3 class="fw-bold text-navy-dark mb-1">User &amp; Officer Directory</h3>
+      <p class="text-muted small mb-0">Role-based access management for registered citizens and municipal department officers.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+      </a>
+    </div>
+  </div>
+
+  <!-- Role Filter Card -->
+  <div class="civic-card p-3 mb-4">
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{{ url_for('admin.users_list', role='all') }}" class="btn btn-sm {{ 'btn-civic-teal' if role_filter == 'all' else 'btn-outline-secondary' }}">
+        All Roles ({{ users|length }})
+      </a>
+      <a href="{{ url_for('admin.users_list', role='officer') }}" class="btn btn-sm {{ 'btn-civic-teal' if role_filter == 'officer' else 'btn-outline-secondary' }}">
+        Department Officers
+      </a>
+      <a href="{{ url_for('admin.users_list', role='citizen') }}" class="btn btn-sm {{ 'btn-civic-teal' if role_filter == 'citizen' else 'btn-outline-secondary' }}">
+        Citizens
+      </a>
+      <a href="{{ url_for('admin.users_list', role='admin') }}" class="btn btn-sm {{ 'btn-civic-teal' if role_filter == 'admin' else 'btn-outline-secondary' }}">
+        Administrators
+      </a>
+    </div>
+  </div>
+
+  <!-- Users Table -->
+  <div class="civic-card">
+    <div class="table-responsive">
+      <table class="civic-table table align-middle">
+        <thead>
+          <tr>
+            <th>Name &amp; Role</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Department / Ward</th>
+            <th>Activity</th>
+            <th>Registered Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+            <tr>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="kpi-icon-bubble {{ 'kpi-bubble-teal' if u.role == 'admin' else ('kpi-bubble-amber' if u.role == 'officer' else 'kpi-bubble-blue') }}" style="width: 34px; height: 34px; font-size: 1rem;">
+                    <i class="bi {{ 'bi-shield-check' if u.role == 'admin' else ('bi-person-badge' if u.role == 'officer' else 'bi-person') }}"></i>
+                  </div>
+                  <div>
+                    <span class="fw-bold text-dark d-block small">{{ u.name }}</span>
+                    <span class="badge {{ 'bg-danger' if u.role == 'admin' else ('bg-warning text-dark' if u.role == 'officer' else 'bg-secondary') }}" style="font-size: 0.65rem;">
+                      {{ u.role|upper }}
+                    </span>
+                  </div>
+                </div>
+              </td>
+              <td class="small">{{ u.email }}</td>
+              <td class="small text-muted">{{ u.phone or 'Not specified' }}</td>
+              <td class="small">
+                {% if u.role == 'officer' %}
+                  <span class="fw-semibold text-teal">{{ u.department_name or 'Unassigned' }}</span>
+                {% else %}
+                  <span class="text-secondary">{{ u.address or 'City Resident' }}</span>
+                {% endif %}
+              </td>
+              <td class="small">
+                {% if u.role == 'citizen' %}
+                  <span class="badge bg-light text-dark border">{{ u.complaints_reported }} complaints filed</span>
+                {% elif u.role == 'officer' %}
+                  <span class="badge bg-light text-dark border">{{ u.complaints_assigned }} assigned tickets</span>
+                {% else %}
+                  <span class="badge bg-light text-dark border">Full Access</span>
+                {% endif %}
+              </td>
+              <td class="small text-muted">{{ (u.created_at|string)[:10] }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}My Infrastructure Complaints - Smart CivicCare{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 gap-3">
+    <div>
+      <h3 class="fw-bold text-navy-dark mb-1">My Reported Complaints</h3>
+      <p class="text-muted small mb-0">Track all public infrastructure issues you have submitted to municipal authorities.</p>
+    </div>
+    <a href="{{ url_for('citizen.submit_complaint') }}" class="btn btn-civic-teal shadow-sm">
+      <i class="bi bi-plus-circle me-1"></i>New Complaint
+    </a>
+  </div>
+
+  <!-- Filter Card -->
+  <div class="civic-card p-3 mb-4">
+    <form method="GET" action="{{ url_for('citizen.my_complaints') }}" class="row g-2 align-items-center">
+      <div class="col-sm-5 col-md-4">
+        <label class="form-label small text-muted mb-1">Filter by Status</label>
+        <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Statuses</option>
+          {% for st in statuses %}
+            <option value="{{ st }}" {% if status_filter == st %}selected{% endif %}>{{ st }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-sm-5 col-md-4">
+        <label class="form-label small text-muted mb-1">Filter by Category</label>
+        <select name="category" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="all" {% if category_filter == 'all' %}selected{% endif %}>All Categories</option>
+          {% for cat in categories %}
+            <option value="{{ cat }}" {% if category_filter == cat %}selected{% endif %}>{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-sm-2 col-md-2 mt-sm-4">
+        <a href="{{ url_for('citizen.my_complaints') }}" class="btn btn-sm btn-outline-secondary w-100">Reset</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Complaints List -->
+  {% if complaints %}
+    <div class="row g-3">
+      {% for comp in complaints %}
+        <div class="col-md-6 col-lg-4">
+          <div class="civic-card h-100 d-flex flex-column">
+            <!-- Thumbnail if present -->
+            {% if comp.photo_path %}
+              <div class="mb-3 position-relative">
+                <img src="{{ url_for('static', filename=comp.photo_path) }}" class="img-fluid rounded border" style="height: 150px; width: 100%; object-fit: cover;" alt="{{ comp.title }}">
+                {% if comp.priority == 'HIGH' %}
+                  <span class="position-absolute top-0 end-0 m-2 badge badge-priority-high">HIGH PRIORITY</span>
+                {% elif comp.priority == 'MEDIUM' %}
+                  <span class="position-absolute top-0 end-0 m-2 badge badge-priority-medium">MEDIUM</span>
+                {% else %}
+                  <span class="position-absolute top-0 end-0 m-2 badge badge-priority-low">LOW</span>
+                {% endif %}
+              </div>
+            {% endif %}
+
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="badge bg-light text-secondary border fw-bold">{{ comp.ticket_id }}</span>
+              {% set s = comp.status %}
+              <span class="badge badge-status 
+                {% if s == 'Submitted' %}badge-status-submitted
+                {% elif s == 'Under Review' %}badge-status-under-review
+                {% elif s == 'Assigned' %}badge-status-assigned
+                {% elif s == 'In Progress' %}badge-status-in-progress
+                {% elif s == 'Resolved' %}badge-status-resolved
+                {% else %}badge-status-rejected{% endif %}">
+                {{ s }}
+              </span>
+            </div>
+
+            <h6 class="fw-bold text-dark text-truncate mb-1" title="{{ comp.title }}">{{ comp.title }}</h6>
+            <div class="small text-muted mb-2"><i class="bi bi-tag me-1 text-teal"></i>{{ comp.category }}</div>
+            <p class="small text-secondary flex-grow-1 mb-3" style="font-size: 0.82rem;">
+              {{ comp.description[:110] }}...
+            </p>
+
+            <div class="border-top pt-2 d-flex justify-content-between align-items-center small text-muted">
+              <span><i class="bi bi-calendar3 me-1"></i>{{ (comp.created_at|string)[:10] }}</span>
+              <a href="{{ url_for('citizen.complaint_detail', complaint_id=comp.id) }}" class="btn btn-sm btn-outline-teal py-0 px-2" style="font-size: 0.8rem;">
+                Track Details &rarr;
+              </a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="civic-card text-center py-5">
+      <i class="bi bi-inbox text-muted fs-1 mb-2 d-block"></i>
+      <h6 class="fw-bold text-dark">No Matching Complaints Found</h6>
+      <p class="text-muted small mb-3">Try adjusting your filters or submit a new complaint.</p>
+      <a href="{{ url_for('citizen.submit_complaint') }}" class="btn btn-civic-teal btn-sm">Submit New Complaint</a>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,504 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t('submit_banner_title') }} - {{ t('app_title') }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .camera-container {
+    background: #0f172a;
+    border-radius: 14px;
+    padding: 1.25rem;
+    color: #e2e8f0;
+    position: relative;
+  }
+  .camera-viewport {
+    width: 100%;
+    height: 330px;
+    background: #1e293b;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px dashed #0d9488;
+  }
+  .camera-viewport video, .camera-viewport canvas, .camera-viewport img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .rec-indicator {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    background: rgba(15, 23, 42, 0.9);
+    border: 2px solid #ef4444;
+    color: #f87171;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    z-index: 10;
+  }
+  .rec-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #ef4444;
+    animation: recPulse 1s infinite;
+  }
+  @keyframes recPulse {
+    0% { transform: scale(0.9); opacity: 1; }
+    50% { transform: scale(1.3); opacity: 0.4; }
+    100% { transform: scale(0.9); opacity: 1; }
+  }
+  #submitMap {
+    height: 260px;
+    border-radius: 10px;
+    z-index: 1;
+  }
+  /* Easy Problem Tile Buttons */
+  .quick-problem-card {
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1rem 0.75rem;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+  }
+  .quick-problem-card:hover {
+    border-color: #0d9488;
+    background-color: #f0fdfa;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.15);
+  }
+  .quick-problem-card.active-problem-card {
+    border-color: #0d9488;
+    background-color: #ccfbf1;
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.25);
+  }
+  .quick-problem-icon {
+    font-size: 2.2rem;
+    line-height: 1;
+    margin-bottom: 0.4rem;
+  }
+  .step-number-bubble {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #0d9488;
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row g-4 justify-content-center">
+    <div class="col-lg-10 col-xl-9">
+
+      <!-- Header & Voice Guide Banner -->
+      <div class="civic-card shadow-sm p-3 p-md-4 mb-4 bg-gradient-navy text-white" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 80%, #0d9488 100%);">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+          <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <span class="badge bg-teal text-white small px-2 py-1"><i class="bi bi-shield-check me-1"></i>{{ t('village_city_care') }}</span>
+              <span class="badge bg-light text-dark small">{{ t('simple_mode') }}</span>
+            </div>
+            <h3 class="fw-bold mb-1 text-white">{{ t('submit_banner_title') }}</h3>
+            <p class="text-light text-opacity-90 small mb-0">
+              {{ t('submit_banner_subtitle') }}
+            </p>
+          </div>
+          <!-- Audio Instructions Helper Button -->
+          <div class="text-md-end">
+            <button type="button" class="btn btn-warning text-dark fw-bold px-3 py-2 shadow-sm rounded-pill" onclick="CivicAccessibility.speakText('{{ t('listen_help_speech') }}', '{{ lang }}')">
+              <i class="bi bi-volume-up-fill me-1 fs-5"></i> 🔊 {{ t('listen_help') }}
+            </button>
+          </div>
+        </div>
+
+        <!-- 3-Step Simple Visual Stepper -->
+        <div class="row g-2 mt-3 pt-3 border-top border-secondary text-center small">
+          <div class="col-4">
+            <span class="step-number-bubble mb-1">{{ t('step_1_num') }}</span>
+            <div class="text-white fw-bold">📸 {{ t('step_1_short') }}</div>
+            <span class="text-light text-opacity-75" style="font-size: 0.72rem;">{{ t('step_1_short_desc') }}</span>
+          </div>
+          <div class="col-4">
+            <span class="step-number-bubble mb-1">{{ t('step_2_num') }}</span>
+            <div class="text-white fw-bold">✍️ {{ t('step_2_short') }}</div>
+            <span class="text-light text-opacity-75" style="font-size: 0.72rem;">{{ t('step_2_short_desc') }}</span>
+          </div>
+          <div class="col-4">
+            <span class="step-number-bubble mb-1">{{ t('step_3_num') }}</span>
+            <div class="text-white fw-bold">🚀 {{ t('step_3_short') }}</div>
+            <span class="text-light text-opacity-75" style="font-size: 0.72rem;">{{ t('step_3_short_desc') }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Submission Form -->
+      <form id="complaintForm" method="POST" action="{{ url_for('citizen.submit_complaint') }}" enctype="multipart/form-data">
+        
+        <!-- STEP 1: Live Camera Evidence Capture -->
+        <div class="civic-card shadow-sm p-4 mb-4 border-teal">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <div class="d-flex align-items-center gap-2">
+              <span class="step-number-bubble">1</span>
+              <div>
+                <h5 class="fw-bold text-navy-dark mb-0">{{ t('step_1_title') }}</h5>
+                <span class="small text-muted">{{ t('step_1_desc') }}</span>
+              </div>
+            </div>
+            <span class="badge bg-teal text-white small" id="camStatusBadge"><i class="bi bi-camera me-1"></i>{{ t('camera_ready') }}</span>
+          </div>
+
+          <div class="camera-container mb-3">
+            <div class="camera-viewport" id="cameraViewport">
+              <video id="cameraVideo" autoplay playsinline muted></video>
+              <canvas id="cameraCanvas" style="display: none;"></canvas>
+              <img id="photoPreview" style="display: none;" alt="Captured Photo Preview">
+              <div class="rec-indicator" id="recIndicator">
+                <span class="rec-dot"></span>
+                <span>REC <span id="recTimer">00:00</span></span>
+              </div>
+            </div>
+
+            <!-- Big Camera Control Buttons -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between mt-3 gap-2">
+              <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-teal text-white fw-bold px-3 py-2" id="btnCapturePhoto">
+                  <i class="bi bi-camera-fill me-1 fs-5"></i> 📸 {{ t('take_photo') }}
+                </button>
+                <button type="button" class="btn btn-outline-danger fw-bold px-3 py-2" id="btnRecordVideo">
+                  <i class="bi bi-record-circle me-1"></i> 🎥 {{ t('record_video') }}
+                </button>
+                <button type="button" class="btn btn-outline-secondary fw-semibold" id="btnRetake" style="display: none;">
+                  <i class="bi bi-arrow-counterclockwise me-1"></i> {{ t('retake') }}
+                </button>
+              </div>
+
+              <!-- Simulated Feed for testing without webcam -->
+              <div>
+                <button type="button" class="btn btn-sm btn-outline-light text-secondary py-1" id="btnSimulateCamera" title="Simulates live capture if camera hardware is unavailable">
+                  <i class="bi bi-hdd-network me-1"></i>{{ t('simulate_camera') }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Evidence State Notification -->
+            <div id="evidenceStatus" class="alert alert-success py-2 px-3 small mt-3 mb-0" style="display: none;">
+              <i class="bi bi-check-circle-fill text-success me-1"></i><strong id="evidenceStatusText">{{ t('photo_captured_success') }}</strong>
+            </div>
+
+            <!-- Hidden base64 input for captured photo -->
+            <input type="hidden" name="camera_image_data" id="cameraImageData">
+            <!-- Hidden file input for video blob -->
+            <input type="file" name="camera_video" id="cameraVideoInput" style="display: none;">
+          </div>
+        </div>
+
+        <!-- STEP 2: One-Tap Quick Problem Selection -->
+        <div class="civic-card shadow-sm p-4 mb-4">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="step-number-bubble">2</span>
+            <div>
+              <h5 class="fw-bold text-navy-dark mb-0">{{ t('step_2_title') }}</h5>
+              <span class="small text-muted">{{ t('step_2_desc') }}</span>
+            </div>
+          </div>
+
+          <!-- 6 Big Colorful Problem Cards -->
+          <div class="row g-3 my-2">
+            <div class="col-6 col-md-4">
+              <div class="quick-problem-card" id="quickCard_pothole" onclick="CivicAccessibility.selectQuickProblem('pothole')">
+                <div class="quick-problem-icon">🕳️</div>
+                <strong class="d-block text-dark small">{{ t('quick_pothole_title') }}</strong>
+                <span class="text-muted" style="font-size: 0.72rem;">{{ t('quick_pothole_desc') }}</span>
+              </div>
+            </div>
+
+            <div class="col-6 col-md-4">
+              <div class="quick-problem-card" id="quickCard_water_leak" onclick="CivicAccessibility.selectQuickProblem('water_leak')">
+                <div class="quick-problem-icon">💧</div>
+                <strong class="d-block text-dark small">{{ t('quick_water_title') }}</strong>
+                <span class="text-muted" style="font-size: 0.72rem;">{{ t('quick_water_desc') }}</span>
+              </div>
+            </div>
+
+            <div class="col-6 col-md-4">
+              <div class="quick-problem-card" id="quickCard_garbage" onclick="CivicAccessibility.selectQuickProblem('garbage')">
+                <div class="quick-problem-icon">🗑️</div>
+                <strong class="d-block text-dark small">{{ t('quick_garbage_title') }}</strong>
+                <span class="text-muted" style="font-size: 0.72rem;">{{ t('quick_garbage_desc') }}</span>
+              </div>
+            </div>
+
+            <div class="col-6 col-md-4">
+              <div class="quick-problem-card" id="quickCard_streetlight" onclick="CivicAccessibility.selectQuickProblem('streetlight')">
+                <div class="quick-problem-icon">💡</div>
+                <strong class="d-block text-dark small">{{ t('quick_streetlight_title') }}</strong>
+                <span class="text-muted" style="font-size: 0.72rem;">{{ t('quick_streetlight_desc') }}</span>
+              </div>
+            </div>
+
+            <div class="col-6 col-md-4">
+              <div class="quick-problem-card" id="quickCard_drainage" onclick="CivicAccessibility.selectQuickProblem('drainage')">
+                <div class="quick-problem-icon">🌊</div>
+                <strong class="d-block text-dark small">{{ t('quick_drain_title') }}</strong>
+                <span class="text-muted" style="font-size: 0.72rem;">{{ t('quick_drain_desc') }}</span>
+              </div>
+            </div>
+
+            <div class="col-6 col-md-4">
+              <div class="quick-problem-card" id="quickCard_infra" onclick="CivicAccessibility.selectQuickProblem('infra')">
+                <div class="quick-problem-icon">🪑</div>
+                <strong class="d-block text-dark small">{{ t('quick_infra_title') }}</strong>
+                <span class="text-muted" style="font-size: 0.72rem;">{{ t('quick_infra_desc') }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Problem Title & Voice Typing Box -->
+          <div class="mt-4 pt-3 border-top">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <label class="form-label small fw-bold text-dark mb-0">{{ t('complaint_title') }} <span class="text-danger">*</span></label>
+              <div class="d-flex align-items-center gap-1">
+                <span class="small text-muted">{{ t('preferred_language') }}:</span>
+                <select name="language" id="inputLanguage" class="form-select form-select-sm" style="width: auto;" onchange="window.location.href='/language/toggle/' + this.value;">
+                  <option value="en" {{ 'selected' if lang == 'en' else '' }}>English</option>
+                  <option value="kn" {{ 'selected' if lang == 'kn' else '' }}>ಕನ್ನಡ</option>
+                  <option value="hi" {{ 'selected' if lang == 'hi' else '' }}>हिन्दी</option>
+                </select>
+              </div>
+            </div>
+            <input type="text" name="title" id="inputTitle" class="form-control mb-3" placeholder="{{ t('title_placeholder') }}" required>
+
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <label class="form-label small fw-bold text-dark mb-0">{{ t('complaint_description') }} <span class="text-danger">*</span></label>
+              <!-- Voice Dictation Button -->
+              <button type="button" class="btn btn-sm btn-outline-success fw-bold px-3 py-1 shadow-sm rounded-pill" id="btnVoiceInput">
+                <i class="bi bi-mic-fill me-1 text-success"></i> 🎤 {{ t('voice_input_btn') }}
+              </button>
+            </div>
+            <textarea name="description" id="inputDescription" rows="3" class="form-control" placeholder="{{ t('desc_placeholder') }}" required></textarea>
+            <div id="voiceStatus" class="small mt-1" style="display: none;"></div>
+          </div>
+
+          <!-- Real-Time AI Assistant Pre-Triage Card -->
+          <div id="aiPreTriageBox" class="p-3 my-3 rounded-3 border bg-light" style="display: none;">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="fw-bold small text-navy-dark"><i class="bi bi-cpu-fill text-teal me-1"></i>AI Smart Analysis</span>
+              <span class="badge bg-teal text-white small" id="aiConfidenceBadge">94% Confidence</span>
+            </div>
+            <div class="row g-2 small">
+              <div class="col-sm-4">
+                <span class="text-muted d-block">Detected Category:</span>
+                <strong class="text-teal" id="aiPredictedCategory">Road Damage</strong>
+              </div>
+              <div class="col-sm-4">
+                <span class="text-muted d-block">Assigned Department:</span>
+                <strong class="text-dark" id="aiSuggestedDepartment">ROADS Department</strong>
+              </div>
+              <div class="col-sm-4">
+                <span class="text-muted d-block">Priority Level:</span>
+                <span class="badge badge-priority-high" id="aiPriorityBadge">HIGH</span>
+              </div>
+            </div>
+            <div class="mt-2 pt-2 border-top text-muted small" id="aiPriorityReason">
+              Assigned high priority for urgent community safety.
+            </div>
+
+            <!-- Duplicate Alert Banner -->
+            <div id="aiDuplicateAlert" class="alert alert-warning mt-2 mb-0 py-2 px-3 small border-0" style="display: none;">
+              <i class="bi bi-exclamation-triangle-fill me-1"></i>
+              <strong>Notice:</strong> A similar complaint was recently reported nearby. This report will be linked to accelerate resolution.
+            </div>
+          </div>
+
+          <!-- Category dropdown for manual confirmation -->
+          <div class="row g-3 mt-1">
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-muted">{{ t('category_label') }}</label>
+              <select name="category" id="selectCategory" class="form-select form-select-sm">
+                <option value="">-- Auto-Detected by AI --</option>
+                {% for cat in categories %}
+                  <option value="{{ cat }}">{{ cat }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-semibold text-muted">{{ t('severity_label') }}</label>
+              <select name="severity" class="form-select form-select-sm">
+                <option value="Critical">Critical</option>
+                <option value="High" selected>High</option>
+                <option value="Medium">Medium</option>
+                <option value="Cosmetic">Minor</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-semibold text-muted">{{ t('affected_people_label') }}</label>
+              <select name="affected_people" class="form-select form-select-sm">
+                <option value=">500">> 500 (Entire Ward)</option>
+                <option value="100-500">100 - 500 (Colony / Market)</option>
+                <option value="10-50" selected>10 - 50 (Street)</option>
+                <option value="<10">< 10 (Individual)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 3: Location Details & Live GPS -->
+        <div class="civic-card shadow-sm p-4 mb-4">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <div class="d-flex align-items-center gap-2">
+              <span class="step-number-bubble">3</span>
+              <div>
+                <h5 class="fw-bold text-navy-dark mb-0">{{ t('step_3_title') }}</h5>
+                <span class="small text-muted">{{ t('step_3_desc') }}</span>
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-light text-secondary border" id="gpsStatusPill">
+                <i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ t('location_detected') }}
+              </span>
+              <button type="button" class="btn btn-sm btn-outline-success fw-bold py-1 px-2" id="btnRefreshGps">
+                <i class="bi bi-crosshair me-1"></i>Refresh GPS
+              </button>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <label class="form-label small fw-bold text-dark">{{ t('ward_label') }} <span class="text-danger">*</span></label>
+              <select name="ward_number" id="selectWard" class="form-select" required>
+                {% for w in wards %}
+                  <option value="{{ w }}" {{ 'selected' if 'Ward 42' in w else '' }}>{{ w }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-bold text-dark">Address / Street</label>
+              <input type="text" name="address" id="inputAddress" class="form-control" placeholder="Street or colony name" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-bold text-dark">{{ t('landmark_label') }}</label>
+              <input type="text" name="landmark" id="inputLandmark" class="form-control" placeholder="{{ t('landmark_placeholder') }}">
+            </div>
+          </div>
+
+          <!-- Interactive Leaflet Map with drag pin -->
+          <div id="submitMap" class="mb-2 border"></div>
+          <div class="d-flex justify-content-between align-items-center small text-muted">
+            <span><i class="bi bi-info-circle me-1"></i>Drag marker to pinpoint exact location.</span>
+            <span>Accuracy: <strong id="accuracyDisplay">&plusmn;12m</strong></span>
+          </div>
+
+          <!-- Hidden coordinate inputs -->
+          <input type="hidden" name="latitude" id="inputLat" value="{{ default_lat }}">
+          <input type="hidden" name="longitude" id="inputLng" value="{{ default_lng }}">
+          <input type="hidden" name="gps_accuracy" id="inputGpsAccuracy" value="12.5">
+          <input type="hidden" name="is_manual_location" id="inputIsManualLocation" value="0">
+        </div>
+
+        <!-- Big, Friendly Submit Button -->
+        <div class="d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3 p-3 bg-light rounded-3 border">
+          <a href="{{ url_for('citizen.dashboard') }}" class="btn btn-outline-secondary w-100 w-sm-auto">
+            <i class="bi bi-arrow-left me-1"></i>{{ t('cancel') }}
+          </a>
+          <button type="submit" class="btn btn-civic-teal btn-lg w-100 w-sm-auto px-5 py-3 fw-bold shadow" id="btnSubmitComplaint">
+            <i class="bi bi-send-check-fill me-2 fs-5"></i>{{ t('submit_btn') }}
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/camera.js') }}"></script>
+<script src="{{ url_for('static', filename='js/gps.js') }}"></script>
+<script src="{{ url_for('static', filename='js/complaints.js') }}"></script>
+<script src="{{ url_for('static', filename='js/accessibility.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // 1. Initialize Strict Camera Module
+    if (window.CivicCamera) {
+      CivicCamera.init({
+        viewportId: 'cameraViewport',
+        videoId: 'cameraVideo',
+        canvasId: 'cameraCanvas',
+        previewId: 'photoPreview',
+        captureBtnId: 'btnCapturePhoto',
+        recordBtnId: 'btnRecordVideo',
+        retakeBtnId: 'btnRetake',
+        simulateBtnId: 'btnSimulateCamera',
+        hiddenImageInputId: 'cameraImageData',
+        hiddenVideoInputId: 'cameraVideoInput',
+        recIndicatorId: 'recIndicator',
+        recTimerId: 'recTimer',
+        statusBadgeId: 'camStatusBadge',
+        evidenceStatusId: 'evidenceStatus'
+      });
+    }
+
+    // 2. Initialize GPS Module
+    if (window.CivicGPS) {
+      CivicGPS.init({
+        mapId: 'submitMap',
+        latInputId: 'inputLat',
+        lngInputId: 'inputLng',
+        accuracyInputId: 'inputGpsAccuracy',
+        isManualInputId: 'inputIsManualLocation',
+        statusPillId: 'gpsStatusPill',
+        accuracyDisplayId: 'accuracyDisplay',
+        refreshBtnId: 'btnRefreshGps',
+        defaultLat: {{ default_lat }},
+        defaultLng: {{ default_lng }}
+      });
+    }
+
+    // 3. Initialize Live AI Pre-Triage Hook
+    if (window.CivicComplaints) {
+      CivicComplaints.initLiveTriage({
+        titleInputId: 'inputTitle',
+        descInputId: 'inputDescription',
+        categorySelectId: 'selectCategory',
+        aiBoxId: 'aiPreTriageBox',
+        confidenceBadgeId: 'aiConfidenceBadge',
+        categorySpanId: 'aiPredictedCategory',
+        deptSpanId: 'aiSuggestedDepartment',
+        priorityBadgeId: 'aiPriorityBadge',
+        priorityScoreId: 'aiPriorityScore',
+        priorityReasonId: 'aiPriorityReason',
+        duplicateAlertId: 'aiDuplicateAlert',
+        dupDistanceId: 'dupDistance',
+        dupTicketId: 'dupTicketId'
+      });
+    }
+
+    // 4. Initialize Voice Dictation
+    if (window.CivicAccessibility) {
+      CivicAccessibility.initVoiceInput({
+        buttonId: 'btnVoiceInput',
+        targetInputId: 'inputDescription',
+        statusId: 'voiceStatus',
+        langSelectId: 'inputLanguage'
+      });
+    }
+  });
+</script>
+{% endblock %}

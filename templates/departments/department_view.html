@@ -1,0 +1,373 @@
+{% extends "base.html" %}
+
+{% block title %}{{ dept.name }} Portal - Smart CivicCare 2.0{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+
+  <!-- Department Header Banner -->
+  <div class="civic-card shadow-sm p-4 mb-4 text-white" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 75%, {{ dept.color or '#0d9488' }} 100%);">
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="civic-brand-icon" style="background: {{ dept.color or '#0d9488' }}; width: 56px; height: 56px; font-size: 1.8rem;">
+          <i class="bi {{ dept.icon or 'bi-building' }}"></i>
+        </div>
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge bg-teal text-white small px-2 py-1">{{ dept.code }} PORTAL</span>
+            <span class="badge bg-dark border text-light small">{{ dept.category }}</span>
+          </div>
+          <h3 class="fw-bold mb-0 text-white">{{ dept.name }}</h3>
+          <p class="text-light text-opacity-75 small mb-0">{{ dept.description }}</p>
+        </div>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <a href="{{ url_for('departments.all_departments') }}" class="btn btn-outline-light btn-sm">
+          <i class="bi bi-arrow-left me-1"></i>All Departments
+        </a>
+        <a href="{{ url_for('forecasting.demand_forecast_view') }}" class="btn btn-outline-info text-light btn-sm fw-semibold">
+          <i class="bi bi-graph-up-arrow me-1"></i>Department Demand Forecast
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Operational KPIs -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">Total Assigned</div>
+          <div class="kpi-value">{{ stats.total or 0 }}</div>
+          <div class="kpi-sub">Total complaints assigned</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-blue"><i class="bi bi-inbox-fill"></i></div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">Pending Triage</div>
+          <div class="kpi-value text-warning">{{ stats.pending or 0 }}</div>
+          <div class="kpi-sub">Awaiting field dispatch</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-amber"><i class="bi bi-hourglass-split"></i></div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">Active Work</div>
+          <div class="kpi-value text-teal">{{ stats.in_progress or 0 }}</div>
+          <div class="kpi-sub">Field crews working</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-teal"><i class="bi bi-tools"></i></div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">Critical Hazards</div>
+          <div class="kpi-value text-danger">{{ stats.high_risk or 0 }}</div>
+          <div class="kpi-sub">High priority safety queue</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-red"><i class="bi bi-shield-exclamation"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Department Complaints Queue (Left 8 Cols) -->
+    <div class="col-lg-8">
+      <div class="civic-card shadow-sm p-4 mb-4">
+        
+        <!-- Filter Bar -->
+        <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between mb-3 pb-2 border-bottom gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-table text-teal fs-5"></i>
+            <h5 class="fw-bold text-navy-dark mb-0">{{ dept.code }} Complaint Queue</h5>
+          </div>
+          <span class="badge bg-light text-secondary border">{{ complaints|length }} Tickets</span>
+        </div>
+
+        <form method="GET" action="{{ url_for('departments.department_portal', dept_code=dept.code) }}" class="row g-2 mb-3">
+          <div class="col-sm-4">
+            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+              <option value="all" {{ 'selected' if status_filter == 'all' else '' }}>All Statuses</option>
+              {% for st in statuses %}
+                <option value="{{ st }}" {{ 'selected' if status_filter == st else '' }}>{{ st }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-sm-4">
+            <select name="priority" class="form-select form-select-sm" onchange="this.form.submit()">
+              <option value="all" {{ 'selected' if priority_filter == 'all' else '' }}>All Priorities</option>
+              {% for p in priorities %}
+                <option value="{{ p }}" {{ 'selected' if priority_filter == p else '' }}>{{ p }} Priority</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-sm-4">
+            <select name="ward" class="form-select form-select-sm" onchange="this.form.submit()">
+              <option value="all" {{ 'selected' if ward_filter == 'all' else '' }}>All Wards</option>
+              {% for w in wards %}
+                <option value="{{ w }}" {{ 'selected' if ward_filter == w else '' }}>{{ w }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </form>
+
+        {% if complaints %}
+          <div class="table-responsive">
+            <table class="civic-table table align-middle small">
+              <thead>
+                <tr>
+                  <th>Ticket</th>
+                  <th>Incident &amp; Citizen</th>
+                  <th>Ward &amp; Street</th>
+                  <th>Contractor &amp; Budget</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>Officer</th>
+                  <th class="text-end">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for c in complaints %}
+                  <tr>
+                    <td>
+                      <a href="{{ url_for('citizen.complaint_detail', complaint_id=c.id) }}" class="fw-bold text-teal text-decoration-none font-monospace">
+                        #{{ c.ticket_id }}
+                      </a>
+                      <div class="text-muted" style="font-size: 0.7rem;">{{ (c.created_at|string)[:10] }}</div>
+                    </td>
+                    <td>
+                      <strong class="text-dark d-block text-truncate" style="max-width: 170px;">{{ c.title }}</strong>
+                      <small class="text-muted">{{ c.citizen_name }}</small>
+                    </td>
+                    <td>
+                      <span class="fw-semibold text-dark">{{ c.ward_number }}</span>
+                      <small class="text-muted d-block text-truncate" style="max-width: 130px;">{{ c.address }}</small>
+                    </td>
+                    <td>
+                      {% if c.contractor_name %}
+                        <div class="fw-semibold text-navy-dark text-truncate" style="max-width: 160px;" title="{{ c.contractor_name }}">
+                          <i class="bi bi-briefcase me-1 text-warning"></i>{{ c.contractor_name }}
+                        </div>
+                        <div class="text-muted text-truncate" style="font-size: 0.72rem; max-width: 160px;">
+                          <i class="bi bi-person-badge me-1 text-teal"></i>{{ c.engineer_name or 'Supervising Engg' }}
+                        </div>
+                        <div class="d-flex align-items-center gap-1 mt-1">
+                          {% if c.budget_allocated %}
+                            <span class="badge bg-light text-success border border-success-subtle font-monospace" style="font-size: 0.7rem;">
+                              ₹{{ "{:,.0f}".format(c.budget_allocated) }}
+                            </span>
+                          {% endif %}
+                          {% if c.government_order_no %}
+                            <a href="{{ url_for('admin.view_government_order', complaint_id=c.id) }}" target="_blank" class="badge bg-light text-primary border border-primary-subtle text-decoration-none" style="font-size: 0.7rem;" title="View Official G.O. Copy">
+                              <i class="bi bi-file-earmark-text me-1"></i>G.O. Copy
+                            </a>
+                          {% endif %}
+                        </div>
+                      {% else %}
+                        <span class="badge bg-light text-secondary border" style="font-size: 0.7rem;">Direct Crew</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if c.priority == 'HIGH' %}
+                        <span class="badge badge-priority-high">HIGH</span>
+                      {% elif c.priority == 'MEDIUM' %}
+                        <span class="badge badge-priority-medium">MEDIUM</span>
+                      {% else %}
+                        <span class="badge badge-priority-low">LOW</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% set s_clean = c.status|lower|replace(' ', '-') %}
+                      <span class="status-badge status-badge-{{ s_clean }}">
+                        {{ c.status }}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="text-muted">{{ c.officer_name or 'Unassigned' }}</span>
+                    </td>
+                    <td class="text-end">
+                      <a href="{{ url_for('citizen.complaint_detail', complaint_id=c.id) }}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;">
+                        Open
+                      </a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="text-muted small text-center py-4 mb-0">No complaints matching the selected criteria.</p>
+        {% endif %}
+
+      </div>
+
+      <!-- Predictive Maintenance Recommendations for this Department (Section 9) -->
+      <div class="civic-card shadow-sm p-4">
+        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-lightbulb-fill text-warning fs-5"></i>
+            <h5 class="fw-bold text-navy-dark mb-0">AI Predictive Maintenance Directives</h5>
+          </div>
+          <span class="badge bg-warning text-dark small">Automated Proactive Action</span>
+        </div>
+
+        {% if recommendations %}
+          <div class="d-flex flex-column gap-3">
+            {% for r in recommendations %}
+              <div class="p-3 rounded border bg-light">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                  <span class="badge {{ 'bg-danger text-white' if r.urgency == 'URGENT' else 'bg-warning text-dark' }} small">
+                    {{ r.urgency }}
+                  </span>
+                  <span class="small text-muted font-monospace">Budget: {{ r.estimated_cost_inr }}</span>
+                </div>
+                <strong class="text-navy-dark d-block mb-1">{{ r.action_title }}</strong>
+                <p class="small text-muted mb-2">{{ r.action_description }}</p>
+                <div class="d-flex align-items-center justify-content-between small text-secondary">
+                  <span>Target: <strong>{{ r.target_infrastructure }}</strong></span>
+                  <span>Window: <strong>{{ r.recommended_timeline }}</strong></span>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="small text-muted text-center py-3 mb-0">No maintenance recommendations currently pending for this department.</p>
+        {% endif %}
+      </div>
+
+    </div>
+
+    <!-- Right 4 Cols: Officer Roster & Info -->
+    <div class="col-lg-4">
+      
+      <!-- Department Officers Roster -->
+      <div class="civic-card shadow-sm p-4 mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-people-fill text-teal fs-5"></i>
+            <h5 class="fw-bold text-navy-dark mb-0">Authorized Officers</h5>
+          </div>
+          <span class="badge bg-light text-secondary border small">{{ officers|length }} Active</span>
+        </div>
+
+        {% if officers %}
+          <div class="d-flex flex-column gap-2">
+            {% for off in officers %}
+              <div class="p-2 rounded bg-light border d-flex align-items-center gap-2">
+                <div class="civic-brand-icon" style="background: {{ dept.color or '#0d9488' }}; width: 34px; height: 34px; font-size: 1rem;">
+                  <i class="bi bi-person-badge"></i>
+                </div>
+                <div class="overflow-hidden">
+                  <strong class="text-navy-dark small d-block text-truncate">{{ off.name }}</strong>
+                  <div class="text-muted text-truncate" style="font-size: 0.72rem;">{{ off.email }}</div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="small text-muted text-center py-3 mb-0">No officers assigned directly to this department yet.</p>
+        {% endif %}
+      </div>
+
+      <!-- Department Supervising Engineers & Approved Contractors (Admin & Dept Transparency) -->
+      <div class="civic-card shadow-sm p-4 mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-briefcase-fill text-warning fs-5"></i>
+            <h5 class="fw-bold text-navy-dark mb-0">Contractors &amp; Engineers</h5>
+          </div>
+          <span class="badge bg-teal text-white small">{{ avg_dept_perf }}% Avg</span>
+        </div>
+
+        <!-- Designated Engineers -->
+        {% if engineers %}
+          <div class="mb-3">
+            <span class="text-muted small fw-semibold text-uppercase d-block mb-1" style="font-size: 0.7rem;">Supervising Engineers</span>
+            <div class="d-flex flex-column gap-1">
+              {% for eng in engineers %}
+                <div class="p-2 rounded bg-light border d-flex align-items-center justify-content-between">
+                  <div>
+                    <strong class="small text-navy-dark d-block">{{ eng.name }}</strong>
+                    <span class="badge bg-secondary-subtle text-secondary border font-monospace" style="font-size: 0.68rem;">{{ eng.designation }}</span>
+                  </div>
+                  <span class="badge bg-light text-primary border" style="font-size: 0.68rem;">Govt Officer</span>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- Empanelled Contractors -->
+        <div>
+          <span class="text-muted small fw-semibold text-uppercase d-block mb-1" style="font-size: 0.7rem;">Empanelled Contractors (Citizen Rated)</span>
+          {% if contractors %}
+            <div class="d-flex flex-column gap-2">
+              {% for ct in contractors %}
+                <div class="p-2 rounded bg-light border">
+                  <div class="d-flex align-items-center justify-content-between mb-1">
+                    <strong class="small text-navy-dark text-truncate" style="max-width: 170px;" title="{{ ct.name }}">
+                      {{ ct.name }}
+                    </strong>
+                    <span class="badge {{ ct.grade_badge }} font-monospace" style="font-size: 0.68rem;">
+                      {{ ct.grade_label }}
+                    </span>
+                  </div>
+                  
+                  <div class="d-flex align-items-center justify-content-between small text-muted mb-1" style="font-size: 0.72rem;">
+                    <span>License: <strong class="font-monospace">{{ ct.registration_grade }}</strong></span>
+                    <span>Budget: <strong class="text-navy-dark">₹{{ "{:,.0f}".format(ct.total_budget) }}</strong></span>
+                  </div>
+
+                  <!-- Citizen Satisfaction Progress Bar -->
+                  <div class="d-flex align-items-center gap-2 mb-1">
+                    <div class="progress flex-grow-1" style="height: 6px; background-color: #e2e8f0;">
+                      <div class="progress-bar {% if ct.performance_percentage >= 85 %}bg-success{% elif ct.performance_percentage >= 70 %}bg-teal{% elif ct.performance_percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
+                           style="width: {{ ct.performance_percentage }}%;"></div>
+                    </div>
+                    <strong class="font-monospace small {% if ct.performance_percentage >= 85 %}text-success{% elif ct.performance_percentage >= 70 %}text-teal{% elif ct.performance_percentage >= 50 %}text-warning{% else %}text-danger{% endif %}" style="font-size: 0.75rem;">
+                      {{ ct.performance_percentage }}%
+                    </strong>
+                  </div>
+
+                  <div class="d-flex align-items-center justify-content-between text-muted" style="font-size: 0.7rem;">
+                    <span>{{ ct.completed_tasks }} Done &bull; {{ ct.active_tasks }} Active</span>
+                    {% if current_user.role == 'admin' %}
+                      <a href="{{ url_for('admin.contractor_detail', contractor_id=ct.id) }}" class="text-teal text-decoration-none fw-semibold">
+                        Details &rarr;
+                      </a>
+                    {% endif %}
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="small text-muted text-center py-2 mb-0">No contractors assigned yet to this department.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Department Contact Details -->
+      <div class="civic-card shadow-sm p-4">
+        <h6 class="fw-bold text-navy-dark mb-3"><i class="bi bi-info-circle text-teal me-2"></i>Department Information</h6>
+        <div class="small text-muted lh-lg">
+          <div><i class="bi bi-envelope me-2 text-teal"></i>Official Email: <strong>{{ dept.contact_email or 'dept@smartcivic.gov' }}</strong></div>
+          <div><i class="bi bi-telephone me-2 text-teal"></i>Helpline: <strong>{{ dept.phone or '+91 80 2297 5000' }}</strong></div>
+          <div><i class="bi bi-geo-alt me-2 text-teal"></i>Office: <strong>Central Municipal Annex Building, 3rd Floor</strong></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+

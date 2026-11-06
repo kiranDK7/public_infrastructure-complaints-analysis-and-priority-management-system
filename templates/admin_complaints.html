@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Complaints - Smart CivicCare Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 gap-3">
+    <div>
+      <h3 class="fw-bold text-navy-dark mb-1">Infrastructure Complaints Directory</h3>
+      <p class="text-muted small mb-0">Filter, inspect, assign departments, and manage priorities across all registered civic tickets.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter & Search Toolbar -->
+  <div class="civic-card p-3 mb-4">
+    <form method="GET" action="{{ url_for('admin.complaints_list') }}" class="row g-2 align-items-center">
+      <div class="col-md-3">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-light text-muted"><i class="bi bi-search"></i></span>
+          <input type="text" name="search" class="form-control" placeholder="Search ticket #, title, or road..." value="{{ search_query }}">
+        </div>
+      </div>
+
+      <div class="col-6 col-md-2">
+        <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Statuses</option>
+          {% for st in statuses %}
+            <option value="{{ st }}" {% if status_filter == st %}selected{% endif %}>{{ st }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-6 col-md-2">
+        <select name="priority" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="all" {% if priority_filter == 'all' %}selected{% endif %}>All Priorities</option>
+          {% for p in priorities %}
+            <option value="{{ p }}" {% if priority_filter == p %}selected{% endif %}>{{ p }} Priority</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-6 col-md-3">
+        <select name="category" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="all" {% if category_filter == 'all' %}selected{% endif %}>All Categories</option>
+          {% for cat in categories %}
+            <option value="{{ cat }}" {% if category_filter == cat %}selected{% endif %}>{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-6 col-md-2 d-flex gap-1">
+        <button type="submit" class="btn btn-sm btn-civic-teal flex-grow-1">Filter</button>
+        <a href="{{ url_for('admin.complaints_list') }}" class="btn btn-sm btn-outline-secondary">Reset</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Master Complaints Table -->
+  <div class="civic-card">
+    <div class="table-responsive">
+      <table class="civic-table table align-middle">
+        <thead>
+          <tr>
+            <th>Ticket</th>
+            <th>Citizen</th>
+            <th>Complaint Details</th>
+            <th>AI Triage</th>
+            <th>Priority</th>
+            <th>Department &amp; Officer</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if complaints %}
+            {% for comp in complaints %}
+              <tr>
+                <td>
+                  <span class="fw-bold text-dark">{{ comp.ticket_id }}</span>
+                  <small class="d-block text-muted" style="font-size: 0.72rem;">{{ (comp.created_at|string)[:10] }}</small>
+                </td>
+                <td>
+                  <span class="fw-semibold text-dark small d-block">{{ comp.citizen_name }}</span>
+                  <small class="text-muted" style="font-size: 0.7rem;">{{ comp.citizen_phone or 'No phone' }}</small>
+                </td>
+                <td>
+                  <a href="{{ url_for('citizen.complaint_detail', complaint_id=comp.id) }}" class="fw-bold text-dark text-decoration-none hover-teal d-block text-truncate" style="max-width: 250px;">
+                    {{ comp.title }}
+                  </a>
+                  <span class="badge bg-light text-secondary border me-1" style="font-size: 0.7rem;">{{ comp.category }}</span>
+                  <span class="text-muted small d-inline-block text-truncate" style="max-width: 200px; font-size: 0.75rem;">
+                    <i class="bi bi-geo-alt text-danger me-1"></i>{{ comp.address or 'Location coordinates logged' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="small">
+                    <span class="badge bg-teal bg-opacity-25 text-teal" style="font-size: 0.68rem;">
+                      {{ (comp.ai_category_confidence * 100)|round|int }}% Match
+                    </span>
+                    <span class="small text-muted d-block" style="font-size: 0.7rem;">Score: {{ comp.ai_priority_score }}/100</span>
+                  </div>
+                </td>
+                <td>
+                  {% if comp.priority == 'HIGH' %}
+                    <span class="badge badge-priority-high">HIGH</span>
+                  {% elif comp.priority == 'MEDIUM' %}
+                    <span class="badge badge-priority-medium">MEDIUM</span>
+                  {% else %}
+                    <span class="badge badge-priority-low">LOW</span>
+                  {% endif %}
+                  {% if comp.admin_override %}
+                    <small class="d-block text-warning fw-semibold" style="font-size: 0.65rem;">(Overridden)</small>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="small fw-semibold text-dark d-block">
+                    {{ comp.department_name or '<span class="text-danger">Unassigned</span>'|safe }}
+                  </span>
+                  <small class="text-muted" style="font-size: 0.7rem;">{{ comp.officer_name or 'No officer dispatched' }}</small>
+                </td>
+                <td>
+                  {% set s = comp.status %}
+                  <span class="badge badge-status 
+                    {% if s == 'Submitted' %}badge-status-submitted
+                    {% elif s == 'Under Review' %}badge-status-under-review
+                    {% elif s == 'Assigned' %}badge-status-assigned
+                    {% elif s == 'In Progress' %}badge-status-in-progress
+                    {% elif s == 'Resolved' %}badge-status-resolved
+                    {% else %}badge-status-rejected{% endif %}">
+                    {{ s }}
+                  </span>
+                </td>
+                <td>
+                  <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle py-0 px-2" type="button" data-bs-toggle="dropdown">
+                      Manage
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                      <li>
+                        <a class="dropdown-item small" href="{{ url_for('citizen.complaint_detail', complaint_id=comp.id) }}">
+                          <i class="bi bi-eye me-2 text-primary"></i>View Full Detail
+                        </a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item small" href="{{ url_for('citizen.complaint_detail', complaint_id=comp.id) }}#assignModal">
+                          <i class="bi bi-building me-2 text-teal"></i>Assign Department
+                        </a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item small" href="{{ url_for('citizen.complaint_detail', complaint_id=comp.id) }}#overridePriorityModal">
+                          <i class="bi bi-sliders me-2 text-warning"></i>Override Priority
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="8" class="text-center py-5 text-muted">
+                <i class="bi bi-search fs-2 d-block mb-2"></i>
+                No complaints found matching the criteria.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

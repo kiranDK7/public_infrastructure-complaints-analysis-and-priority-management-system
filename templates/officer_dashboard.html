@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Officer Workspace - Smart CivicCare{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+
+  <!-- Header Banner -->
+  <div class="civic-card bg-navy text-white mb-4 p-4" style="background: linear-gradient(135deg, var(--civic-navy) 0%, #1e293b 70%, #0369a1 100%);">
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span class="badge bg-warning text-dark"><i class="bi bi-person-badge-fill me-1"></i>FIELD OFFICER PORTAL</span>
+          <span class="small text-light opacity-75">{{ dept.name if dept else 'Department Operations' }}</span>
+        </div>
+        <h3 class="fw-bold mb-0">Officer Workspace: {{ current_user.name }}</h3>
+      </div>
+      <div class="d-flex align-items-center gap-3">
+        <div class="text-end d-none d-sm-block">
+          <small class="text-light opacity-75 d-block">Department Code</small>
+          <span class="fw-bold text-white">{{ dept.code if dept else 'MUNICIPAL' }}</span>
+        </div>
+        <div class="kpi-icon-bubble bg-white text-dark shadow-sm">
+          <i class="bi {{ dept.icon if dept else 'bi-briefcase' }} fs-4 text-teal"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">Total Assigned</div>
+          <div class="kpi-value">{{ total_assigned }}</div>
+          <div class="kpi-sub">Lifetime departmental work</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-blue"><i class="bi bi-clipboard2-check-fill"></i></div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">Active / In Progress</div>
+          <div class="kpi-value text-amber">{{ in_progress }}</div>
+          <div class="kpi-sub">Ground repairs underway</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-amber"><i class="bi bi-tools"></i></div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">High Priority Threats</div>
+          <div class="kpi-value text-danger">{{ high_priority }}</div>
+          <div class="kpi-sub">SLA critical tickets</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-red"><i class="bi bi-exclamation-octagon-fill"></i></div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">Resolved Work</div>
+          <div class="kpi-value text-success">{{ resolved }}</div>
+          <div class="kpi-sub">Closed with verified proof</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-green"><i class="bi bi-patch-check-fill"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assigned Complaints Table -->
+  <div class="civic-card">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div>
+        <h5 class="fw-bold text-navy-dark mb-0">Assigned Municipal Tasks Queue</h5>
+        <span class="small text-muted">Tickets assigned to your department requiring on-ground repair &amp; verification</span>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="civic-table table align-middle">
+        <thead>
+          <tr>
+            <th>Ticket</th>
+            <th>Citizen &amp; Contact</th>
+            <th>Problem Description</th>
+            <th>Priority</th>
+            <th>Location</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if complaints %}
+            {% for comp in complaints %}
+              <tr>
+                <td>
+                  <span class="fw-bold text-dark">{{ comp.ticket_id }}</span>
+                  <small class="d-block text-muted" style="font-size: 0.72rem;">{{ (comp.created_at|string)[:10] }}</small>
+                </td>
+                <td>
+                  <span class="fw-semibold text-dark small d-block">{{ comp.citizen_name }}</span>
+                  <small class="text-muted" style="font-size: 0.7rem;">{{ comp.citizen_phone or 'No phone' }}</small>
+                </td>
+                <td>
+                  <a href="{{ url_for('citizen.complaint_detail', complaint_id=comp.id) }}" class="fw-bold text-dark text-decoration-none hover-teal d-block text-truncate" style="max-width: 250px;">
+                    {{ comp.title }}
+                  </a>
+                  <span class="badge bg-light text-secondary border me-1" style="font-size: 0.7rem;">{{ comp.category }}</span>
+                  <p class="small text-muted mb-0 text-truncate" style="max-width: 260px; font-size: 0.78rem;">{{ comp.description }}</p>
+                </td>
+                <td>
+                  {% if comp.priority == 'HIGH' %}
+                    <span class="badge badge-priority-high">HIGH</span>
+                  {% elif comp.priority == 'MEDIUM' %}
+                    <span class="badge badge-priority-medium">MEDIUM</span>
+                  {% else %}
+                    <span class="badge badge-priority-low">LOW</span>
+                  {% endif %}
+                </td>
+                <td class="small">
+                  <span class="d-block text-truncate" style="max-width: 180px;">
+                    <i class="bi bi-geo-alt text-danger me-1"></i>{{ comp.address }}
+                  </span>
+                  <small class="text-muted">{{ comp.landmark or '' }}</small>
+                </td>
+                <td>
+                  {% set s = comp.status %}
+                  <span class="badge badge-status 
+                    {% if s == 'Submitted' %}badge-status-submitted
+                    {% elif s == 'Under Review' %}badge-status-under-review
+                    {% elif s == 'Assigned' %}badge-status-assigned
+                    {% elif s == 'In Progress' %}badge-status-in-progress
+                    {% elif s == 'Resolved' %}badge-status-resolved
+                    {% else %}badge-status-rejected{% endif %}">
+                    {{ s }}
+                  </span>
+                </td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <a href="{{ url_for('citizen.complaint_detail', complaint_id=comp.id) }}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.8rem;">
+                      Inspect
+                    </a>
+                    <button type="button" class="btn btn-sm btn-civic-teal py-0 px-2" style="font-size: 0.8rem;"
+                            onclick="openStatusModal({{ comp.id }}, '{{ comp.ticket_id }}', '{{ comp.status }}')">
+                      Update
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="7" class="text-center py-5 text-muted">
+                <i class="bi bi-check-circle fs-2 d-block mb-2 text-success"></i>
+                All assigned work completed! No active tickets in queue.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Dynamic Status & Proof Modal -->
+<div class="modal fade" id="dynamicOfficerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" id="officerStatusForm" action="" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="modalTicketTitle">Update Complaint Status</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">New Workflow Status *</label>
+            <select name="status" id="modalStatusSelect" class="form-select" required>
+              {% for st in statuses %}
+                <option value="{{ st }}">{{ st }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Upload Completion / Repair Photo</label>
+            <input type="file" name="resolution_photo" class="form-control" accept="image/*">
+            <div class="form-text small">Recommended for 'Resolved' status to document on-ground repair proof.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Officer Work Remarks *</label>
+            <textarea name="remarks" id="modalRemarks" rows="3" class="form-control" placeholder="Describe actions taken, crew dispatched, materials used..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-civic-teal btn-sm">Save &amp; Notify Citizen</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function openStatusModal(complaintId, ticketId, currentStatus) {
+    const modalEl = document.getElementById('dynamicOfficerModal');
+    const form = document.getElementById('officerStatusForm');
+    const title = document.getElementById('modalTicketTitle');
+    const select = document.getElementById('modalStatusSelect');
+
+    form.action = `/officer/complaint/${complaintId}/update-status`;
+    title.innerText = `Update Status: ${ticketId}`;
+    select.value = currentStatus;
+
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+  }
+</script>
+{% endblock %}

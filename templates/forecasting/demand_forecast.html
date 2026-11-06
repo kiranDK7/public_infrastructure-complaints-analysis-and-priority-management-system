@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}AI Demand Forecasting &amp; Resource Planning - Smart CivicCare 2.0{% endblock %}
+
+{% block extra_css %}
+<style>
+  .horizon-pill {
+    padding: 0.45rem 1.1rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    border-radius: 50px;
+    transition: all 0.2s ease;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+
+  <!-- Header & Horizon Switcher -->
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 gap-3">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <span class="badge bg-teal text-white"><i class="bi bi-cpu-fill me-1"></i>AI Predictive Intelligence</span>
+        <span class="badge bg-dark border text-light">Section 9 Demand Engine</span>
+      </div>
+      <h3 class="fw-bold text-navy-dark mb-0">Infrastructure Demand Forecasting &amp; Resource Planning</h3>
+      <p class="text-muted small mb-0">Multi-horizon predictive modeling (7, 30, and 90 days) with confidence intervals, monsoon multipliers, and dynamic crew planning.</p>
+    </div>
+
+    <!-- Horizon Switcher Pills -->
+    <div class="d-flex align-items-center gap-2 p-1 bg-light rounded-pill border">
+      {% for h in horizons %}
+        <a href="{{ url_for('forecasting.demand_forecast_view', horizon=h, ward=selected_ward, department=selected_dept) }}"
+           class="horizon-pill text-decoration-none {{ 'bg-teal text-white shadow-sm' if horizon == h else 'text-muted' }}">
+          {{ h }}-Day Outlook
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="civic-card shadow-sm p-3 mb-4">
+    <form method="GET" action="{{ url_for('forecasting.demand_forecast_view') }}" class="row g-2 align-items-center">
+      <input type="hidden" name="horizon" value="{{ horizon }}">
+      
+      <div class="col-md-5">
+        <label class="form-label small fw-semibold text-muted mb-1">Select Municipal Ward</label>
+        <select name="ward" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="all" {{ 'selected' if selected_ward == 'all' else '' }}>All Municipal Wards (City-Wide)</option>
+          {% for w in wards %}
+            <option value="{{ w }}" {{ 'selected' if selected_ward == w else '' }}>{{ w }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-5">
+        <label class="form-label small fw-semibold text-muted mb-1">Select Department</label>
+        <select name="department" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="all" {{ 'selected' if selected_dept == 'all' else '' }}>All 6 Departments</option>
+          {% for d in departments %}
+            <option value="{{ d.id }}" {{ 'selected' if selected_dept|string == d.id|string else '' }}>{{ d.name }} ({{ d.code }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2 d-flex align-items-end">
+        <a href="{{ url_for('forecasting.demand_forecast_view', horizon=horizon) }}" class="btn btn-sm btn-outline-secondary w-100 mt-md-4">
+          Reset Filter
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Summary KPI Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">{{ horizon }}-Day Projected Demand</div>
+          <div class="kpi-value text-teal" style="font-size: 1.8rem;">{{ total_forecasted }}</div>
+          <div class="kpi-sub">Total expected incidents</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-teal"><i class="bi bi-graph-up-arrow"></i></div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">Monsoon Surge Factor</div>
+          <div class="kpi-value text-danger" style="font-size: 1.8rem;">+140%</div>
+          <div class="kpi-sub">Drainage &amp; waterlogging risk</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-red"><i class="bi bi-cloud-rain-heavy-fill"></i></div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">Peak Demand Sector</div>
+          <div class="kpi-value" style="font-size: 1.5rem;">Drainage</div>
+          <div class="kpi-sub">Ward 42 Low-Lying Corridor</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-blue"><i class="bi bi-water"></i></div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">Confidence Bounds</div>
+          <div class="kpi-value text-success" style="font-size: 1.8rem;">95%</div>
+          <div class="kpi-sub">Statistically bounded forecast</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-green"><i class="bi bi-check2-circle"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Time Series Forecast Curve Visualization -->
+  <div class="civic-card shadow-sm p-4 mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div>
+        <h5 class="fw-bold text-navy-dark mb-0"><i class="bi bi-bezier2 text-teal me-2"></i>Time-Series Demand Projection with Confidence Intervals</h5>
+        <span class="small text-muted">Historical incident trends with projected demand curve and upper/lower confidence bounds.</span>
+      </div>
+      <span class="badge bg-light text-secondary border small">Horizon: {{ horizon }} Days</span>
+    </div>
+    <div style="height: 320px; position: relative;">
+      <canvas id="chartForecastCurve"></canvas>
+    </div>
+  </div>
+
+  <!-- Smart Resource & Workforce Planning Matrix (Section 9) -->
+  <div class="civic-card shadow-sm p-4 mb-4 border-teal">
+    <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-people-fill text-teal fs-5"></i>
+        <h5 class="fw-bold text-navy-dark mb-0">Predictive Workforce &amp; Resource Allocation Matrix</h5>
+      </div>
+      <span class="badge bg-teal text-white small">Translating Demand &rarr; Field Logistics</span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="civic-table table small align-middle">
+        <thead>
+          <tr>
+            <th>Department</th>
+            <th>Projected Complaints</th>
+            <th>Required Field Workers</th>
+            <th>Specialized Equipment / Vehicles</th>
+            <th>Work Crews</th>
+            <th>Recommended Materials</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in resource_plans %}
+            <tr>
+              <td>
+                <strong class="text-navy-dark">{{ r.department_name }}</strong>
+                <span class="badge bg-light text-secondary border ms-1" style="font-size: 0.65rem;">{{ r.department_code }}</span>
+              </td>
+              <td><span class="fw-bold fs-6">{{ r.predicted_complaints }}</span></td>
+              <td><span class="badge bg-info text-dark fw-bold">{{ r.required_workers }} Personnel</span></td>
+              <td><span class="small text-dark">{{ r.required_vehicles }}</span></td>
+              <td><span class="badge bg-light text-dark border">{{ r.required_teams }} Crews</span></td>
+              <td><span class="small text-muted">{{ r.recommended_materials }}</span></td>
+              <td>
+                {% if r.shortage_status == 'MOBILIZE BACKUP' %}
+                  <span class="badge bg-danger text-white">MOBILIZE BACKUP</span>
+                {% else %}
+                  <span class="badge bg-success text-white">ADEQUATE</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Detailed Forecast Table -->
+  <div class="civic-card shadow-sm p-4">
+    <h5 class="fw-bold text-navy-dark mb-3"><i class="bi bi-table text-teal me-2"></i>Granular Category &amp; Ward Forecast Registry</h5>
+    <div class="table-responsive">
+      <table class="civic-table table small align-middle">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Ward</th>
+            <th>Horizon</th>
+            <th>Predicted Count</th>
+            <th>Lower 95%</th>
+            <th>Upper 95%</th>
+            <th>Confidence Score</th>
+            <th>Monsoon Surge Factor</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in forecasts %}
+            <tr>
+              <td><strong class="text-navy-dark">{{ f.category }}</strong></td>
+              <td><span class="text-dark">{{ f.ward_number }}</span></td>
+              <td><span class="badge bg-light text-secondary border">{{ f.forecast_horizon_days }} Days</span></td>
+              <td><strong class="text-teal fs-6">{{ f.predicted_complaint_count }}</strong></td>
+              <td><span class="text-muted">{{ f.lower_bound_95 }}</span></td>
+              <td><span class="text-muted">{{ f.upper_bound_95 }}</span></td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="progress flex-grow-1" style="height: 6px; width: 60px;">
+                    <div class="progress-bar bg-teal" style="width: {{ (f.confidence_score * 100)|int }}%;"></div>
+                  </div>
+                  <span class="small text-muted">{{ (f.confidence_score * 100)|int }}%</span>
+                </div>
+              </td>
+              <td>
+                {% if f.monsoon_surge_factor and f.monsoon_surge_factor > 1.2 %}
+                  <span class="badge bg-danger bg-opacity-25 text-danger fw-bold">+{{ ((f.monsoon_surge_factor - 1) * 100)|int }}% Surge</span>
+                {% else %}
+                  <span class="text-muted">Standard 1.0x</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var horizon = {{ horizon }};
+    var ward = '{{ selected_ward }}';
+
+    fetch('/api/forecasting/curve?horizon=' + horizon + '&ward=' + encodeURIComponent(ward))
+      .then(res => res.json())
+      .then(result => {
+        if (result.success && result.data) {
+          var d = result.data;
+          var ctx = document.getElementById('chartForecastCurve').getContext('2d');
+
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: d.timestamps,
+              datasets: [
+                {
+                  label: 'Projected Demand',
+                  data: d.predicted_counts,
+                  borderColor: '#0d9488',
+                  backgroundColor: 'rgba(13, 148, 136, 0.1)',
+                  borderWidth: 2,
+                  fill: true,
+                  tension: 0.3
+                },
+                {
+                  label: 'Upper 95% Bound',
+                  data: d.upper_bounds,
+                  borderColor: 'rgba(239, 68, 68, 0.5)',
+                  borderDash: [5, 5],
+                  borderWidth: 1.5,
+                  fill: false,
+                  pointRadius: 0
+                },
+                {
+                  label: 'Lower 95% Bound',
+                  data: d.lower_bounds,
+                  borderColor: 'rgba(16, 185, 129, 0.5)',
+                  borderDash: [5, 5],
+                  borderWidth: 1.5,
+                  fill: false,
+                  pointRadius: 0
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { position: 'top', labels: { boxWidth: 12 } }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: { display: true, text: 'Expected Complaints' }
+                },
+                x: {
+                  title: { display: true, text: 'Timeline' }
+                }
+              }
+            }
+          });
+        }
+      });
+  });
+</script>
+{% endblock %}
+

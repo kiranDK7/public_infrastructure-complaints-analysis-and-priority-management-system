@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t('sign_in') }} - {{ t('app_title') }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-9 col-lg-7 col-xl-6">
+
+      <!-- Login Card with Role-Segregated Tabs -->
+      <div class="civic-card shadow-sm p-4 p-md-5">
+        <div class="text-center mb-4">
+          <div class="civic-brand-icon mx-auto mb-3" style="width: 52px; height: 52px; font-size: 1.5rem;">
+            <i class="bi bi-shield-lock"></i>
+          </div>
+          <h3 class="fw-bold text-navy-dark">{{ t('welcome_back') }}</h3>
+          <p class="text-muted small">Select your portal below to sign in:</p>
+        </div>
+
+        <!-- Role Tabs -->
+        <ul class="nav nav-pills nav-fill mb-4 p-1 bg-light rounded-3 border" id="loginPageTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold small py-2" id="page-citizen-tab" data-bs-toggle="pill" data-bs-target="#pageCitizenPane" type="button" role="tab">
+              <i class="bi bi-person-fill text-teal me-1"></i>Citizen Login (Easy)
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold small py-2" id="page-staff-tab" data-bs-toggle="pill" data-bs-target="#pageStaffPane" type="button" role="tab">
+              <i class="bi bi-shield-lock-fill text-warning me-1"></i>Administration &amp; Officers
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content" id="loginPageTabContent">
+          <!-- TAB 1: CITIZEN LOGIN (EASY & UNCOMPLICATED) -->
+          <div class="tab-pane fade show active" id="pageCitizenPane" role="tabpanel">
+            <div class="p-3 bg-teal bg-opacity-10 rounded-3 border border-teal-subtle mb-3 small">
+              <i class="bi bi-info-circle-fill text-teal me-1"></i>
+              <strong>Simple Citizen Access:</strong> Enter either your registered 10-digit mobile number or email address.
+            </div>
+
+            <form method="POST" action="{{ url_for('auth.login', next=request.args.get('next')) }}" id="citizenForm">
+              <input type="hidden" name="portal_type" value="citizen">
+
+              <div class="mb-3">
+                <label class="form-label small fw-semibold text-dark">Mobile Phone Number or Email</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light text-teal"><i class="bi bi-phone"></i></span>
+                  <input type="text" name="email" id="pageCitizenEmail" class="form-control" placeholder="e.g. 9876543210 or citizen@example.com" value="{{ email or '' }}" required autofocus>
+                </div>
+              </div>
+
+              <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <label class="form-label small fw-semibold text-dark mb-0">{{ t('password_label') }}</label>
+                </div>
+                <div class="input-group">
+                  <span class="input-group-text bg-light text-muted"><i class="bi bi-key"></i></span>
+                  <input type="password" name="password" id="pageCitizenPassword" class="form-control" placeholder="••••••••" required>
+                  <button class="btn btn-outline-secondary" type="button" onclick="togglePassField('pageCitizenPassword', 'pageCitEye')">
+                    <i class="bi bi-eye" id="pageCitEye"></i>
+                  </button>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-civic-teal w-100 py-2 fw-bold mb-3 shadow-sm">
+                <i class="bi bi-box-arrow-in-right me-1"></i>Sign In as Citizen
+              </button>
+
+              <!-- One-Click Quick Citizen Test -->
+              <div class="p-2 bg-light rounded border text-center mb-3">
+                <span class="small text-muted d-block mb-1" style="font-size: 0.72rem;">One-Click Citizen Demo:</span>
+                <button type="button" class="btn btn-sm btn-outline-dark w-100 py-1" onclick="submitDemo('pageCitizenEmail', 'pageCitizenPassword', 'citizen@example.com', 'citizen123', 'citizenForm')">
+                  <i class="bi bi-person-check me-1 text-teal"></i>Login as Rahul (citizen@example.com)
+                </button>
+              </div>
+
+              <div class="text-center small text-muted">
+                {{ t('no_account') }}
+                <a href="{{ url_for('auth.register') }}" class="text-teal fw-semibold text-decoration-none">{{ t('register_here') }}</a>
+              </div>
+            </form>
+          </div>
+
+          <!-- TAB 2: MUNICIPAL ADMINISTRATION & DEPARTMENT OFFICERS (RESTRICTED) -->
+          <div class="tab-pane fade" id="pageStaffPane" role="tabpanel">
+            <div class="alert alert-warning border-0 p-3 mb-3 small" style="font-size: 0.78rem;">
+              <i class="bi bi-shield-exclamation text-danger fs-6 me-1"></i>
+              <strong>Restricted Government Area:</strong>
+              Citizens are not permitted to log in as administrators. Only Municipal Administrators can issue and share credentials with respected departments and officers.
+            </div>
+
+            <form method="POST" action="{{ url_for('auth.login', next=request.args.get('next')) }}" id="staffForm">
+              <input type="hidden" name="portal_type" value="admin">
+
+              <div class="mb-3">
+                <label class="form-label small fw-semibold text-dark">Official Government Email (Username)</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light text-warning"><i class="bi bi-person-badge"></i></span>
+                  <input type="email" name="email" id="pageStaffEmail" class="form-control" placeholder="e.g. admin@smartcivic.gov" required>
+                </div>
+              </div>
+
+              <div class="mb-4">
+                <label class="form-label small fw-semibold text-dark mb-0">Official Password</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light text-muted"><i class="bi bi-key"></i></span>
+                  <input type="password" name="password" id="pageStaffPassword" class="form-control" placeholder="••••••••" required>
+                  <button class="btn btn-outline-secondary" type="button" onclick="togglePassField('pageStaffPassword', 'pageStaffEye')">
+                    <i class="bi bi-eye" id="pageStaffEye"></i>
+                  </button>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-warning text-dark w-100 py-2 fw-bold mb-3 shadow-sm">
+                <i class="bi bi-shield-lock-fill me-1"></i>Authenticate Administrative Staff
+              </button>
+
+              <!-- One-Click Staff Demos -->
+              <div class="pt-2 border-top">
+                <span class="text-muted small d-block mb-2 font-monospace" style="font-size: 0.72rem;">Authorized Staff One-Click Fills:</span>
+                <div class="row g-2">
+                  <div class="col-6">
+                    <button type="button" class="btn btn-sm btn-outline-danger w-100 py-1" style="font-size: 0.72rem;" onclick="submitDemo('pageStaffEmail', 'pageStaffPassword', 'admin@smartcivic.gov', 'admin123', 'staffForm')">
+                      <i class="bi bi-shield-lock me-1"></i>Admin Commissioner
+                    </button>
+                  </div>
+                  <div class="col-6">
+                    <button type="button" class="btn btn-sm btn-outline-warning w-100 py-1" style="font-size: 0.72rem;" onclick="submitDemo('pageStaffEmail', 'pageStaffPassword', 'officer.roads@smartcivic.gov', 'officer123', 'staffForm')">
+                      <i class="bi bi-cone-striped me-1"></i>Roads Officer
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  function submitDemo(emailId, passId, email, pass, formId) {
+    document.getElementById(emailId).value = email;
+    document.getElementById(passId).value = pass;
+    document.getElementById(formId).submit();
+  }
+
+  function togglePassField(fieldId, iconId) {
+    var pwd = document.getElementById(fieldId);
+    var icon = document.getElementById(iconId);
+    if (pwd && icon) {
+      if (pwd.type === 'password') {
+        pwd.type = 'text';
+        icon.className = 'bi bi-eye-slash';
+      } else {
+        pwd.type = 'password';
+        icon.className = 'bi bi-eye';
+      }
+    }
+  }
+</script>
+{% endblock %}

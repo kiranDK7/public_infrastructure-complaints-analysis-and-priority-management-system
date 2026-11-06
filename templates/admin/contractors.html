@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Contractor Performance & Work Orders - Smart CivicCare 2.0{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Header Banner -->
+  <div class="civic-card shadow-sm p-4 mb-4 bg-gradient-navy text-white" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 80%, #0d9488 100%);">
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span class="badge bg-teal text-white small px-2 py-1"><i class="bi bi-shield-check me-1"></i>Municipal Administration Command</span>
+          <span class="badge bg-light text-dark small">Tender &amp; Contractor Management</span>
+        </div>
+        <h3 class="fw-bold text-white mb-1">Contractor Work Analysis &amp; Citizen Performance Ratings</h3>
+        <p class="text-light text-opacity-90 small mb-0">
+          Citizen completion ratings are directly correlated to executing contractors in percentage form (%) to enforce quality, transparency, and accountability.
+        </p>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-teal text-white fw-bold px-3 py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#newContractorModal">
+          <i class="bi bi-plus-circle-fill me-1"></i>Add New Contractor
+        </button>
+      </div>
+    </div>
+
+    <!-- 4 High-Impact KPI Metrics -->
+    <div class="row g-3 mt-3 pt-3 border-top border-secondary">
+      <div class="col-6 col-lg-3">
+        <span class="text-light text-opacity-75 small d-block">Approved Contractors:</span>
+        <h3 class="fw-bold text-white mb-0">{{ contractors|length }} Agencies</h3>
+        <span class="text-light text-opacity-75" style="font-size: 0.72rem;">Across all 6 municipal divisions</span>
+      </div>
+      <div class="col-6 col-lg-3">
+        <span class="text-light text-opacity-75 small d-block">Avg Citizen Satisfaction:</span>
+        <h3 class="fw-bold text-info mb-0">{{ avg_score_sum }}%</h3>
+        <div class="progress mt-1" style="height: 6px;">
+          <div class="progress-bar bg-info" style="width: {{ avg_score_sum }}%;"></div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <span class="text-light text-opacity-75 small d-block">Completed Work Orders:</span>
+        <h3 class="fw-bold text-success mb-0">{{ total_completed }} / {{ total_completed + total_active }}</h3>
+        <span class="text-light text-opacity-75" style="font-size: 0.72rem;">{{ total_active }} currently in progress</span>
+      </div>
+      <div class="col-6 col-lg-3">
+        <span class="text-light text-opacity-75 small d-block">Total Sanctioned Budget:</span>
+        <h3 class="fw-bold text-warning mb-0">₹{{ "{:,.2f}".format(total_budget_sum) }}</h3>
+        <span class="text-light text-opacity-75" style="font-size: 0.72rem;">Official Government Orders issued</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Department Filter Buttons -->
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div class="btn-group btn-group-sm flex-wrap" role="group">
+      <a href="{{ url_for('admin.contractors_list') }}" class="btn {{ 'btn-dark' if not selected_dept_id else 'btn-outline-secondary' }}">
+        All 6 Departments
+      </a>
+      {% for d in departments %}
+        <a href="{{ url_for('admin.contractors_list', department_id=d.id) }}" class="btn {{ 'btn-teal text-white' if selected_dept_id == d.id else 'btn-outline-secondary' }}">
+          <i class="bi {{ d.icon }} me-1"></i>{{ d.name }}
+        </a>
+      {% endfor %}
+    </div>
+
+    <span class="small text-muted">Showing {{ contractors|length }} active contractors</span>
+  </div>
+
+  <!-- Contractors List Table -->
+  <div class="civic-card shadow-sm p-4 mb-4">
+    <div class="table-responsive">
+      <table class="civic-table table align-middle">
+        <thead>
+          <tr>
+            <th>Contractor Agency &amp; Code</th>
+            <th>Department</th>
+            <th>Work Orders</th>
+            <th>Sanctioned Budget</th>
+            <th>Citizen Rating Analysis</th>
+            <th>Performance Score (%)</th>
+            <th>Grade Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in contractors %}
+            <tr>
+              <td>
+                <div class="fw-bold text-navy-dark">{{ c.name }}</div>
+                <div class="small text-muted font-monospace" style="font-size: 0.72rem;">
+                  <span class="badge bg-light text-dark border me-1">{{ c.code }}</span>
+                  Lic: {{ c.license_number }}
+                </div>
+                <div class="small text-muted mt-1" style="font-size: 0.7rem;">
+                  <i class="bi bi-person me-1"></i>{{ c.contact_person }} &bull; {{ c.phone }}
+                </div>
+              </td>
+              <td>
+                <span class="badge" style="background-color: {{ c.department_color or '#0d9488' }}; color: #fff;">
+                  <i class="bi {{ c.department_icon or 'bi-building' }} me-1"></i>{{ c.department_name }}
+                </span>
+                <div class="small text-muted mt-1" style="font-size: 0.7rem;">{{ c.registration_grade }}</div>
+              </td>
+              <td>
+                <div class="small">
+                  <strong>{{ c.total_tasks }}</strong> Total Tasks
+                </div>
+                <div class="d-flex align-items-center gap-1 mt-1" style="font-size: 0.7rem;">
+                  <span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>{{ c.completed_tasks }} Done</span>
+                  <span class="text-muted">&bull;</span>
+                  <span class="text-warning"><i class="bi bi-clock-history me-1"></i>{{ c.active_tasks }} Active</span>
+                </div>
+              </td>
+              <td>
+                <strong class="text-dark font-monospace">₹{{ "{:,.0f}".format(c.total_budget) }}</strong>
+                <div class="text-muted" style="font-size: 0.7rem;">Cumulative G.O. Sanctions</div>
+                <span class="badge bg-light text-primary border" style="font-size: 0.65rem;"><i class="bi bi-file-earmark-text me-1"></i>G.O. Copy Available</span>
+              </td>
+              <td>
+                <div class="d-flex align-items-center gap-1">
+                  <span class="fw-bold text-warning fs-6">★ {{ c.avg_rating_display }}</span>
+                  <span class="small text-muted">/ 5.0</span>
+                </div>
+                <div class="small text-muted" style="font-size: 0.72rem;">
+                  Based on <strong>{{ c.total_ratings_count }}</strong> citizen ratings
+                </div>
+              </td>
+              <td>
+                <!-- Highlighted Performance in Percentage Form -->
+                <div class="d-flex align-items-baseline gap-1">
+                  <h4 class="fw-bold mb-0 {{ 'text-success' if c.performance_percentage >= 88 else ('text-teal' if c.performance_percentage >= 75 else ('text-warning' if c.performance_percentage >= 60 else 'text-danger')) }}">
+                    {{ c.performance_percentage }}%
+                  </h4>
+                </div>
+                <div class="progress mt-1" style="height: 6px; width: 110px;">
+                  <div class="progress-bar {{ 'bg-success' if c.performance_percentage >= 88 else ('bg-teal' if c.performance_percentage >= 75 else ('bg-warning' if c.performance_percentage >= 60 else 'bg-danger')) }}"
+                       style="width: {{ c.performance_percentage }}%;"></div>
+                </div>
+              </td>
+              <td>
+                <span class="badge {{ c.grade_badge }} px-2 py-1 small">
+                  {{ c.grade }}
+                </span>
+              </td>
+              <td>
+                <a href="{{ url_for('admin.contractor_detail', contractor_id=c.id) }}" class="btn btn-sm btn-outline-dark fw-semibold py-1 px-2" style="font-size: 0.78rem;">
+                  <i class="bi bi-eye-fill me-1"></i>Inspect Work
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal: Register New Contractor -->
+<div class="modal fade" id="newContractorModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('admin.create_contractor') }}">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold text-navy-dark"><i class="bi bi-building-add me-2 text-teal"></i>Register Municipal Contractor</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-dark">Contractor / Agency Company Name *</label>
+            <input type="text" name="name" class="form-control" placeholder="e.g. M/s Southern Highway Bitumen Corp" required>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-dark">Contractor Code</label>
+              <input type="text" name="code" class="form-control" placeholder="Auto-generated if blank">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-dark">Assigned Department *</label>
+              <select name="department_id" class="form-select" required>
+                {% for d in departments %}
+                  <option value="{{ d.id }}">{{ d.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-dark">Government License Number *</label>
+            <input type="text" name="license_number" class="form-control" placeholder="e.g. KA/PWD/CL-1/2026/901" required>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-dark">Contact Person</label>
+              <input type="text" name="contact_person" class="form-control" placeholder="Manager / Lead Engineer">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-dark">Phone Number</label>
+              <input type="text" name="phone" class="form-control" placeholder="+91 98XXX XXXXX">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-dark">Official Email</label>
+            <input type="email" name="email" class="form-control" placeholder="tender@contractor.in">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-dark">Registration Grade</label>
+            <select name="registration_grade" class="form-select">
+              <option value="Class 1 Government Contractor" selected>Class 1 Government Contractor</option>
+              <option value="Class 2 Registered Contractor">Class 2 Registered Contractor</option>
+              <option value="Specialized Civic Utility Agency">Specialized Civic Utility Agency</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-civic-teal btn-sm fw-bold">Register Contractor</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+  <rect width="100%" height="100%" fill="#f1f5f9"/>
+  <rect x="0" y="0" width="600" height="240" fill="#94a3b8"/>
+  <rect x="0" y="240" width="600" height="160" fill="#64748b"/>
+  <!-- Clean Stainless Municipal Bins neatly arranged -->
+  <rect x="180" y="160" width="100" height="120" fill="#15803d" rx="6" stroke="#166534" stroke-width="4"/>
+  <rect x="320" y="160" width="100" height="120" fill="#0284c7" rx="6" stroke="#0369a1" stroke-width="4"/>
+  <text x="200" y="230" font-family="Arial, sans-serif" font-weight="bold" font-size="16" fill="#ffffff">WET</text>
+  <text x="345" y="230" font-family="Arial, sans-serif" font-weight="bold" font-size="16" fill="#ffffff">DRY</text>
+  <!-- Spotless Footpath with green check -->
+  <circle cx="500" cy="200" r="40" fill="#10b981"/>
+  <path d="M 485 200 L 495 210 L 515 190" stroke="#ffffff" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <!-- Badge -->
+  <rect x="20" y="20" rx="8" width="250" height="40" fill="#10b981" opacity="0.95"/>
+  <text x="35" y="46" font-family="Arial, sans-serif" font-weight="bold" font-size="16" fill="#ffffff">COMPACTED &amp; SANITIZED</text>
+  <text x="20" y="380" font-family="Arial, sans-serif" font-size="14" fill="#ffffff">Solid Waste Management Dept - Resolved</text>
+</svg>

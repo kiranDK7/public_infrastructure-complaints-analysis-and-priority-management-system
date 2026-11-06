@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Citizen Portal - Smart CivicCare{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Welcome Banner -->
+  <div class="civic-card bg-navy text-white mb-4 p-4 p-md-5" style="background: linear-gradient(135deg, var(--civic-navy-dark) 0%, #1e293b 80%, #0d9488 100%);">
+    <div class="row align-items-center g-4">
+      <div class="col-md-8">
+        <span class="badge bg-teal bg-opacity-25 text-info mb-2 border border-info border-opacity-25">Citizen Portal</span>
+        <h2 class="fw-bold mb-1">Welcome back, {{ current_user.name }}!</h2>
+        <p class="text-light opacity-80 mb-0 small">
+          Track your reported infrastructure complaints, view departmental progress in real time, and report new issues in your community.
+        </p>
+      </div>
+      <div class="col-md-4 text-md-end">
+        <a href="{{ url_for('citizen.submit_complaint') }}" class="btn btn-civic-teal btn-lg shadow">
+          <i class="bi bi-plus-circle me-1"></i>Submit New Complaint
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 KPI Summary Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">Total Reported</div>
+          <div class="kpi-value">{{ total }}</div>
+          <div class="kpi-sub">Lifetime submissions</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-blue"><i class="bi bi-file-earmark-text"></i></div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">Under Review / Pending</div>
+          <div class="kpi-value text-purple">{{ pending }}</div>
+          <div class="kpi-sub">Awaiting department triage</div>
+        </div>
+        <div class="kpi-icon-bubble" style="background:#ede9fe; color:#6d28d9;"><i class="bi bi-clock-history"></i></div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">In Progress</div>
+          <div class="kpi-value text-amber">{{ in_progress }}</div>
+          <div class="kpi-sub">Ground teams dispatched</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-amber"><i class="bi bi-tools"></i></div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">Resolved &amp; Closed</div>
+          <div class="kpi-value text-success">{{ resolved }}</div>
+          <div class="kpi-sub">Verified completions</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-green"><i class="bi bi-check-circle-fill"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Recent Complaints Table -->
+    <div class="col-lg-8">
+      <div class="civic-card h-100">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div>
+            <h5 class="fw-bold mb-0">Your Recent Complaints</h5>
+            <span class="small text-muted">Real-time status tracking for your neighborhood reports</span>
+          </div>
+          <a href="{{ url_for('citizen.my_complaints') }}" class="btn btn-sm btn-outline-secondary">View All</a>
+        </div>
+
+        {% if recent_complaints %}
+          <div class="table-responsive">
+            <table class="civic-table table">
+              <thead>
+                <tr>
+                  <th>Ticket</th>
+                  <th>Title &amp; Category</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for comp in recent_complaints %}
+                  <tr>
+                    <td>
+                      <span class="fw-bold text-dark">{{ comp.ticket_id }}</span>
+                      <small class="d-block text-muted" style="font-size: 0.72rem;">{{ (comp.created_at|string)[:10] }}</small>
+                    </td>
+                    <td>
+                      <a href="{{ url_for('citizen.complaint_detail', complaint_id=comp.id) }}" class="text-decoration-none fw-semibold text-dark hover-teal d-block text-truncate" style="max-width: 240px;">
+                        {{ comp.title }}
+                      </a>
+                      <span class="badge bg-light text-secondary border" style="font-size: 0.7rem;">{{ comp.category }}</span>
+                    </td>
+                    <td>
+                      {% if comp.priority == 'HIGH' %}
+                        <span class="badge badge-priority-high">HIGH</span>
+                      {% elif comp.priority == 'MEDIUM' %}
+                        <span class="badge badge-priority-medium">MEDIUM</span>
+                      {% else %}
+                        <span class="badge badge-priority-low">LOW</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% set s = comp.status %}
+                      <span class="badge badge-status 
+                        {% if s == 'Submitted' %}badge-status-submitted
+                        {% elif s == 'Under Review' %}badge-status-under-review
+                        {% elif s == 'Assigned' %}badge-status-assigned
+                        {% elif s == 'In Progress' %}badge-status-in-progress
+                        {% elif s == 'Resolved' %}badge-status-resolved
+                        {% else %}badge-status-rejected{% endif %}">
+                        {{ s }}
+                      </span>
+                    </td>
+                    <td>
+                      <a href="{{ url_for('citizen.complaint_detail', complaint_id=comp.id) }}" class="btn btn-sm btn-outline-teal py-0 px-2" style="font-size: 0.8rem;">
+                        Track &rarr;
+                      </a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="text-center py-5">
+            <i class="bi bi-clipboard-check text-muted fs-1 mb-2 d-block"></i>
+            <h6 class="fw-bold text-dark">No Complaints Reported Yet</h6>
+            <p class="text-muted small mb-3">Notice an infrastructure issue in your city? Report it now and help your local administration resolve it.</p>
+            <a href="{{ url_for('citizen.submit_complaint') }}" class="btn btn-civic-teal btn-sm">Report First Complaint</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Right Side: Status Updates & Notifications -->
+    <div class="col-lg-4">
+      <!-- In-App Notifications Feed -->
+      <div class="civic-card mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h6 class="fw-bold mb-0"><i class="bi bi-bell-fill text-teal me-1"></i>Status Alerts</h6>
+          <a href="{{ url_for('citizen.notifications_view') }}" class="small text-decoration-none text-muted">All</a>
+        </div>
+
+        {% if notifications %}
+          <div class="list-group list-group-flush">
+            {% for n in notifications %}
+              <div class="list-group-item px-0 py-2 border-0 border-bottom">
+                <div class="d-flex justify-content-between align-items-start">
+                  <span class="fw-semibold small text-dark">{{ n.title }}</span>
+                  <small class="text-muted" style="font-size: 0.68rem;">{{ (n.created_at|string)[:10] }}</small>
+                </div>
+                <p class="small text-muted mb-0 mt-1" style="font-size: 0.78rem;">{{ n.message }}</p>
+                {% if n.complaint_id %}
+                  <a href="{{ url_for('citizen.complaint_detail', complaint_id=n.complaint_id) }}" class="small text-teal text-decoration-none fw-semibold" style="font-size: 0.75rem;">View Ticket &rarr;</a>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="small text-muted text-center py-3 mb-0">No active notifications</p>
+        {% endif %}
+      </div>
+
+      <!-- Quick Action Card -->
+      <div class="civic-card bg-light border-0">
+        <h6 class="fw-bold text-navy-dark mb-2"><i class="bi bi-info-circle me-1 text-teal"></i>Smart City Hotline</h6>
+        <p class="small text-muted mb-3">
+          For acute life-threatening situations (e.g. electric short circuit in water flood), contact the central municipal disaster control immediately:
+        </p>
+        <div class="d-flex align-items-center gap-2 p-2 bg-white rounded border">
+          <i class="bi bi-telephone-fill text-danger fs-5"></i>
+          <div>
+            <div class="fw-bold small text-dark">Toll-Free Control Room</div>
+            <div class="small text-muted">1800-425-2026 (24x7)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

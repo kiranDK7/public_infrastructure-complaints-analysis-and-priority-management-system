@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}All Municipal Complaints - Smart CivicCare 2.0 Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+
+  <!-- Header -->
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 gap-3">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb small mb-1">
+          <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}" class="text-teal text-decoration-none">Command Center</a></li>
+          <li class="breadcrumb-item active">Manage Complaints</li>
+        </ol>
+      </nav>
+      <h3 class="fw-bold text-navy-dark mb-0">City-Wide Complaints Directory</h3>
+      <p class="text-muted small mb-0">Triage, Department Assignment, Priority Overrides &amp; SLA Escalations across all municipal wards.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('forecasting.demand_forecast_view') }}" class="btn btn-outline-info text-navy-dark btn-sm fw-bold">
+        <i class="bi bi-graph-up-arrow me-1"></i>Demand Forecast
+      </a>
+      <a href="{{ url_for('departments.all_departments') }}" class="btn btn-civic-navy btn-sm">
+        <i class="bi bi-building me-1"></i>Departments
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter & Search Bar -->
+  <div class="civic-card shadow-sm p-3 mb-4">
+    <form method="GET" action="{{ url_for('admin.complaints_list') }}" class="row g-2 align-items-center">
+      <div class="col-md-3">
+        <label class="form-label small fw-semibold text-muted mb-1">Search Keyword / Ticket</label>
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+          <input type="text" name="search" class="form-control" placeholder="Ticket ID, Title, Road..." value="{{ search_query }}">
+        </div>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label small fw-semibold text-muted mb-1">Status (13 Stages)</label>
+        <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="all" {{ 'selected' if status_filter == 'all' else '' }}>All Statuses</option>
+          {% for st in statuses %}
+            <option value="{{ st }}" {{ 'selected' if status_filter == st else '' }}>{{ st }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label small fw-semibold text-muted mb-1">Priority</label>
+        <select name="priority" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="all" {{ 'selected' if priority_filter == 'all' else '' }}>All Priorities</option>
+          {% for p in priorities %}
+            <option value="{{ p }}" {{ 'selected' if priority_filter == p else '' }}>{{ p }} Priority</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label small fw-semibold text-muted mb-1">Category</label>
+        <select name="category" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="all" {{ 'selected' if category_filter == 'all' else '' }}>All Categories</option>
+          {% for cat in categories %}
+            <option value="{{ cat }}" {{ 'selected' if category_filter == cat else '' }}>{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label small fw-semibold text-muted mb-1">Ward</label>
+        <select name="ward" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="all" {{ 'selected' if ward_filter == 'all' else '' }}>All Wards</option>
+          {% for w in wards %}
+            <option value="{{ w }}" {{ 'selected' if ward_filter == w else '' }}>{{ w }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-1 d-flex align-items-end">
+        <a href="{{ url_for('admin.complaints_list') }}" class="btn btn-sm btn-outline-secondary w-100 mt-md-4" title="Reset Filters">
+          <i class="bi bi-x-circle"></i>
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Complaints Management Table -->
+  <div class="civic-card shadow-sm p-4">
+    {% if complaints %}
+      <div class="table-responsive">
+        <table class="civic-table table align-middle">
+          <thead>
+            <tr>
+              <th>Ticket ID</th>
+              <th>Citizen &amp; Date</th>
+              <th>Incident Title &amp; Ward</th>
+              <th>Category &amp; Department</th>
+              <th>Priority Score</th>
+              <th>Status</th>
+              <th>Officer</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in complaints %}
+              <tr>
+                <td>
+                  <a href="{{ url_for('citizen.complaint_detail', complaint_id=c.id) }}" class="fw-bold text-teal text-decoration-none font-monospace small">
+                    #{{ c.ticket_id }}
+                  </a>
+                  {% if c.is_duplicate %}
+                    <span class="badge bg-warning text-dark d-block mt-1" style="font-size: 0.65rem;">DUPLICATE</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="fw-semibold text-dark small d-block">{{ c.citizen_name }}</span>
+                  <small class="text-muted" style="font-size: 0.7rem;">{{ (c.created_at|string)[:10] }}</small>
+                </td>
+                <td>
+                  <strong class="text-dark small d-block text-truncate" style="max-width: 200px;">{{ c.title }}</strong>
+                  <small class="text-muted">{{ c.ward_number }} &bull; {{ c.address }}</small>
+                </td>
+                <td>
+                  <div class="small fw-semibold text-navy-dark">{{ c.category }}</div>
+                  <span class="badge" style="background-color: {{ c.department_color or '#0d9488' }}; color: #fff; font-size: 0.68rem;">
+                    {{ c.department_name or 'UNASSIGNED' }}
+                  </span>
+                </td>
+                <td>
+                  {% if c.priority == 'HIGH' %}
+                    <span class="badge badge-priority-high">HIGH</span>
+                  {% elif c.priority == 'MEDIUM' %}
+                    <span class="badge badge-priority-medium">MEDIUM</span>
+                  {% else %}
+                    <span class="badge badge-priority-low">LOW</span>
+                  {% endif %}
+                  <small class="text-muted d-block" style="font-size: 0.68rem;">Risk: {{ c.ai_priority_score }}/100</small>
+                  {% if c.admin_override %}
+                    <span class="badge bg-light text-warning border" style="font-size: 0.62rem;">Overridden</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% set s_clean = c.status|lower|replace(' ', '-') %}
+                  <span class="status-badge status-badge-{{ s_clean }}">
+                    {{ c.status }}
+                  </span>
+                </td>
+                <td>
+                  <span class="small text-muted">{{ c.officer_name or 'Unassigned' }}</span>
+                </td>
+                <td class="text-end">
+                  <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle py-1 px-2" type="button" data-bs-toggle="dropdown" style="font-size: 0.75rem;">
+                      Manage
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 small">
+                      <li>
+                        <a class="dropdown-item" href="{{ url_for('citizen.complaint_detail', complaint_id=c.id) }}">
+                          <i class="bi bi-eye me-2 text-teal"></i>View Detail &amp; Timeline
+                        </a>
+                      </li>
+                      <li><hr class="dropdown-divider"></li>
+                      <li>
+                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#assignModal{{ c.id }}">
+                          <i class="bi bi-person-plus me-2 text-primary"></i>Assign Dept &amp; Officer
+                        </a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#overrideModal{{ c.id }}">
+                          <i class="bi bi-arrow-up-right-circle me-2 text-warning"></i>Override Priority
+                        </a>
+                      </li>
+                      {% if c.status != 'ESCALATED' and c.status not in ['COMPLETED', 'RESOLVED'] %}
+                        <li>
+                          <form method="POST" action="{{ url_for('admin.escalate_complaint', complaint_id=c.id) }}">
+                            <input type="hidden" name="escalation_reason" value="Commissioner priority intervention">
+                            <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Escalate this complaint to Commissioner?');">
+                              <i class="bi bi-fire me-2"></i>Escalate Complaint
+                            </button>
+                          </form>
+                        </li>
+                      {% endif %}
+                    </ul>
+                  </div>
+
+                  <!-- Assign Modal -->
+                  <div class="modal fade text-start" id="assignModal{{ c.id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                      <div class="modal-content">
+                        <form method="POST" action="{{ url_for('admin.assign_complaint', complaint_id=c.id) }}">
+                          <div class="modal-header">
+                            <h6 class="modal-title fw-bold text-navy-dark">Assign Ticket #{{ c.ticket_id }}</h6>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                          </div>
+                          <div class="modal-body small">
+                            <div class="mb-3">
+                              <label class="form-label fw-semibold">Target Department</label>
+                              <select name="department_id" class="form-select form-select-sm" required>
+                                {% for d in departments %}
+                                  <option value="{{ d.id }}" {{ 'selected' if d.id == c.assigned_department_id else '' }}>{{ d.name }} ({{ d.code }})</option>
+                                {% endfor %}
+                              </select>
+                            </div>
+                            <div class="mb-3">
+                              <label class="form-label fw-semibold">Assign Specific Officer</label>
+                              <select name="officer_id" class="form-select form-select-sm">
+                                <option value="">-- Let Department Head Distribute --</option>
+                                {% for off in officers %}
+                                  <option value="{{ off.id }}" {{ 'selected' if off.id == c.assigned_officer_id else '' }}>{{ off.name }}</option>
+                                {% endfor %}
+                              </select>
+                            </div>
+                            <div class="mb-3">
+                              <label class="form-label fw-semibold">Special Instructions</label>
+                              <textarea name="notes" class="form-control form-control-sm" rows="2" placeholder="Urgency directives or instructions..."></textarea>
+                            </div>
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-civic-teal btn-sm fw-bold">Confirm Assignment</button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Priority Override Modal -->
+                  <div class="modal fade text-start" id="overrideModal{{ c.id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                      <div class="modal-content">
+                        <form method="POST" action="{{ url_for('admin.override_priority', complaint_id=c.id) }}">
+                          <div class="modal-header">
+                            <h6 class="modal-title fw-bold text-navy-dark">Override Priority for #{{ c.ticket_id }}</h6>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                          </div>
+                          <div class="modal-body small">
+                            <div class="mb-3">
+                              <label class="form-label fw-semibold">New Priority Rating</label>
+                              <select name="priority" class="form-select form-select-sm">
+                                {% for p in priorities %}
+                                  <option value="{{ p }}" {{ 'selected' if p == c.priority else '' }}>{{ p }} Priority</option>
+                                {% endfor %}
+                              </select>
+                            </div>
+                            <div class="mb-3">
+                              <label class="form-label fw-semibold">Administrative Reason</label>
+                              <textarea name="reason" class="form-control form-control-sm" rows="2" placeholder="Ground assessment justification for changing AI priority..." required></textarea>
+                            </div>
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-warning btn-sm text-dark fw-bold">Save Override</button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-search fs-1 text-teal d-block mb-2"></i>
+        <h6 class="fw-bold text-navy-dark">No Complaints Match Filters</h6>
+        <p class="small mb-3">Try adjusting your search keyword or clearing the status/category filters.</p>
+        <a href="{{ url_for('admin.complaints_list') }}" class="btn btn-sm btn-outline-secondary">Reset Filters</a>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+

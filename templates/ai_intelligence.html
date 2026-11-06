@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block title %}AI Intelligence Center - Smart CivicCare Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+
+  <!-- Header -->
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 gap-3">
+    <div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="ai-badge"><i class="bi bi-cpu-fill"></i> SMART CITY AI SUITE</span>
+        <span class="badge bg-success bg-opacity-25 text-success">Model v1.9 Online</span>
+      </div>
+      <h3 class="fw-bold text-navy-dark mb-0">AI Intelligence &amp; Explainability Center</h3>
+      <p class="text-muted small mb-0">Transparent NLP classification, explainable multi-factor priority scoring, and duplicate cluster detection.</p>
+    </div>
+    <div>
+      <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+      </a>
+    </div>
+  </div>
+
+  <!-- Model Performance KPI Grid -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">NLP Classification Model</div>
+          <div class="kpi-value text-teal" style="font-size: 1.6rem;">{{ model_metrics.accuracy }}</div>
+          <div class="kpi-sub">F1 Score: {{ model_metrics.f1_score }}</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-teal"><i class="bi bi-check2-circle"></i></div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">Training Corpus</div>
+          <div class="kpi-value">{{ model_metrics.training_samples }}</div>
+          <div class="kpi-sub">Domain-specific complaints</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-blue"><i class="bi bi-database-check"></i></div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">Priority Engine</div>
+          <div class="kpi-value text-danger" style="font-size: 1.5rem;">Safety-First</div>
+          <div class="kpi-sub">Deterministic 0-100 Matrix</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-red"><i class="bi bi-shield-exclamation"></i></div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">Duplicate Detection</div>
+          <div class="kpi-value text-warning" style="font-size: 1.5rem;">Spatial-NLP</div>
+          <div class="kpi-sub">Haversine &amp; TF-IDF Cosine</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-amber"><i class="bi bi-link-45deg"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live AI Playground / Interactive Evaluator Sandbox -->
+  <div class="civic-card shadow-sm p-4 mb-4 border-teal">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div class="d-flex align-items-center gap-2">
+        <div class="kpi-icon-bubble kpi-bubble-teal" style="width: 36px; height: 36px; font-size: 1.1rem;"><i class="bi bi-terminal"></i></div>
+        <div>
+          <h5 class="fw-bold text-navy-dark mb-0">Live AI Inference Sandbox</h5>
+          <span class="small text-muted">Test any civic complaint description to visualize real-time category probability distribution &amp; risk factors.</span>
+        </div>
+      </div>
+      <span class="badge bg-light text-secondary border">Interactive Demo</span>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <label class="form-label small fw-semibold text-dark">Enter Sample Complaint Text:</label>
+        <textarea id="sandboxInput" rows="4" class="form-control mb-3"
+                  placeholder="e.g. Broken water pipeline gushing continuous drinking water onto sidewalk near hospital emergency gate..."></textarea>
+        
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <span class="small text-muted me-1">Try Preset:</span>
+          <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;"
+                  onclick="setSandboxPreset('Deep crater pothole on city flyover fast lane causing multiple vehicle skids')">
+            Pothole Hazard
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;"
+                  onclick="setSandboxPreset('Open drainage manhole cover missing on busy street walkway, lethal fall trap')">
+            Open Manhole
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;"
+                  onclick="setSandboxPreset('Streetlight pole bent and sparking live electric wires accessible to children')">
+            Live Wire Hazard
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;"
+                  onclick="setSandboxPreset('Massive pile of rotting uncollected solid garbage outside local vegetable market')">
+            Garbage Heap
+          </button>
+        </div>
+
+        <button type="button" class="btn btn-civic-teal w-100" id="btnRunSandbox">
+          <i class="bi bi-play-circle me-1"></i>Run Real-Time AI Analysis
+        </button>
+      </div>
+
+      <!-- Live Inference Results Column -->
+      <div class="col-lg-6">
+        <div class="p-3 bg-light rounded-3 border h-100" id="sandboxResultsBox">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="fw-bold small text-navy-dark">Inference Output &amp; Probability Spread</span>
+            <div class="spinner-border spinner-border-sm text-teal d-none" id="sandboxSpinner"></div>
+          </div>
+
+          <div id="sandboxEmptyState" class="text-center py-4 text-muted small">
+            <i class="bi bi-cpu fs-2 d-block mb-2 text-teal"></i>
+            Click "Run Real-Time AI Analysis" or select a preset to view model confidence and explainable risk telemetry.
+          </div>
+
+          <div id="sandboxDataState" class="d-none">
+            <!-- Classification Result -->
+            <div class="d-flex justify-content-between align-items-center p-2 rounded bg-white border mb-3">
+              <div>
+                <small class="text-muted d-block" style="font-size: 0.7rem;">Predicted Category</small>
+                <span class="fw-bold text-dark" id="resCategory">--</span>
+              </div>
+              <span class="badge bg-teal" id="resConfidence">--% Match</span>
+            </div>
+
+            <!-- Priority & Score -->
+            <div class="d-flex justify-content-between align-items-center p-2 rounded bg-white border mb-3">
+              <div>
+                <small class="text-muted d-block" style="font-size: 0.7rem;">Priority Engine Output</small>
+                <span class="badge" id="resPriority">--</span>
+              </div>
+              <div class="text-end">
+                <span class="fw-bold fs-5 text-dark" id="resScore">--/100</span>
+                <small class="d-block text-muted" style="font-size: 0.7rem;">Risk Score</small>
+              </div>
+            </div>
+
+            <!-- Category Probabilities Spread -->
+            <label class="small text-muted fw-semibold mb-1">Probability Distribution across 6 Categories:</label>
+            <div id="resProbBars" class="mb-3"></div>
+
+            <!-- Explainability Rationale -->
+            <div class="p-2 bg-white rounded border small text-secondary" style="font-size: 0.78rem;">
+              <strong>Explainable Rationale:</strong>
+              <div id="resExplanation" class="mt-1">--</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Duplicate Complaint Clusters -->
+    <div class="col-lg-6">
+      <div class="civic-card h-100">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div>
+            <h5 class="fw-bold text-navy-dark mb-0">Duplicate Incident Clusters</h5>
+            <span class="small text-muted">Automatically linked by geospatial proximity &amp; NLP similarity</span>
+          </div>
+          <span class="badge bg-warning text-dark"><i class="bi bi-link-45deg me-1"></i>Active Links</span>
+        </div>
+
+        {% if duplicate_clusters %}
+          <div class="list-group list-group-flush">
+            {% for dup in duplicate_clusters %}
+              <div class="list-group-item px-0 py-3 border-0 border-bottom">
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                  <span class="badge bg-light text-secondary border fw-bold">{{ dup.ticket_id }}</span>
+                  <span class="badge bg-warning bg-opacity-25 text-warning small">Linked Duplicate</span>
+                </div>
+                <h6 class="fw-bold text-dark mb-1 small">{{ dup.title }}</h6>
+                <div class="p-2 rounded bg-light border small text-muted mb-2" style="font-size: 0.78rem;">
+                  <i class="bi bi-arrow-return-right text-teal me-1"></i>
+                  Linked to Primary Issue: <strong>#{{ dup.parent_ticket_id }}</strong> - <em>{{ dup.parent_title }}</em>
+                </div>
+                <div class="d-flex justify-content-between align-items-center small text-muted">
+                  <span><i class="bi bi-geo-alt text-danger me-1"></i>{{ dup.address }}</span>
+                  <a href="{{ url_for('citizen.complaint_detail', complaint_id=dup.id) }}" class="text-teal fw-semibold text-decoration-none">Inspect Cluster &rarr;</a>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-center py-4 text-muted small">
+            <i class="bi bi-check-circle fs-3 text-success d-block mb-1"></i>
+            No active duplicate clusters detected.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Predictive High-Risk Geospatial Hotspots -->
+    <div class="col-lg-6">
+      <div class="civic-card h-100">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div>
+            <h5 class="fw-bold text-navy-dark mb-0">Critical Hazard Hotspots</h5>
+            <span class="small text-muted">Geographic corridors requiring preventative maintenance</span>
+          </div>
+          <span class="badge bg-danger bg-opacity-25 text-danger"><i class="bi bi-fire me-1"></i>High Risk</span>
+        </div>
+
+        {% if hotspots %}
+          <div class="table-responsive">
+            <table class="civic-table table">
+              <thead>
+                <tr>
+                  <th>Corridor Location</th>
+                  <th>Category</th>
+                  <th>Incidents</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for h in hotspots %}
+                  <tr>
+                    <td>
+                      <span class="fw-bold small text-dark d-block">{{ h.address }}</span>
+                      <small class="text-muted" style="font-size: 0.7rem;">Coordinates: {{ h.lat|round(4) }}, {{ h.lng|round(4) }}</small>
+                    </td>
+                    <td>
+                      <span class="badge bg-light text-secondary border small">{{ h.category }}</span>
+                    </td>
+                    <td>
+                      <span class="badge badge-priority-high">{{ h.incident_count }} High Risk</span>
+                    </td>
+                    <td>
+                      <span class="badge bg-success bg-opacity-15 text-success small">Monitored</span>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="text-muted small text-center py-4">No hazard hotspots identified currently.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function setSandboxPreset(text) {
+    document.getElementById('sandboxInput').value = text;
+    runSandboxAnalysis();
+  }
+
+  function runSandboxAnalysis() {
+    const text = document.getElementById('sandboxInput').value.trim();
+    if (!text) {
+      alert('Please enter or select sample complaint text.');
+      return;
+    }
+
+    const spinner = document.getElementById('sandboxSpinner');
+    const emptyState = document.getElementById('sandboxEmptyState');
+    const dataState = document.getElementById('sandboxDataState');
+
+    spinner.classList.remove('d-none');
+
+    fetch('/api/ai/analyze-complaint', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: text.substring(0, 50),
+        description: text,
+        severity: 'Critical'
+      })
+    })
+      .then(res => res.json())
+      .then(data => {
+        spinner.classList.add('d-none');
+        if (!data.success) return;
+
+        emptyState.classList.add('d-none');
+        dataState.classList.remove('d-none');
+
+        document.getElementById('resCategory').innerText = data.classification.suggested_category;
+        document.getElementById('resConfidence').innerText = `${data.classification.confidence_pct}% Confidence`;
+
+        const priEl = document.getElementById('resPriority');
+        priEl.innerText = data.priority.level;
+        priEl.className = 'badge ' + (data.priority.level === 'HIGH' ? 'badge-priority-high' : (data.priority.level === 'MEDIUM' ? 'badge-priority-medium' : 'badge-priority-low'));
+
+        document.getElementById('resScore').innerText = `${data.priority.score}/100`;
+        document.getElementById('resExplanation').innerText = data.priority.explanation;
+
+        // Render Probability Bars
+        const probContainer = document.getElementById('resProbBars');
+        let html = '';
+        const allProbs = data.classification.all_probabilities || {};
+        for (const [cat, prob] of Object.entries(allProbs)) {
+          const pct = Math.round(prob * 100);
+          const isTop = (cat === data.classification.suggested_category);
+          html += `
+            <div class="mb-1">
+              <div class="d-flex justify-content-between small" style="font-size: 0.72rem;">
+                <span class="${isTop ? 'fw-bold text-dark' : 'text-muted'}">${cat}</span>
+                <span class="${isTop ? 'fw-bold text-teal' : 'text-muted'}">${pct}%</span>
+              </div>
+              <div class="progress" style="height: 4px;">
+                <div class="progress-bar ${isTop ? 'bg-teal' : 'bg-secondary'}" style="width: ${pct}%;"></div>
+              </div>
+            </div>
+          `;
+        }
+        probContainer.innerHTML = html;
+      })
+      .catch(err => {
+        spinner.classList.add('d-none');
+        console.error('Sandbox error:', err);
+      });
+  }
+
+  document.getElementById('btnRunSandbox').addEventListener('click', runSandboxAnalysis);
+</script>
+{% endblock %}
+

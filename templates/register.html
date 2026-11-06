@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Citizen Registration - Smart CivicCare{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-9 col-lg-7 col-xl-6">
+      <div class="civic-card shadow-sm p-4 p-md-5">
+        <div class="text-center mb-4">
+          <div class="civic-brand-icon mx-auto mb-3" style="width: 52px; height: 52px; font-size: 1.5rem;">
+            <i class="bi bi-person-plus"></i>
+          </div>
+          <h3 class="fw-bold text-navy-dark">Citizen Registration</h3>
+          <p class="text-muted small">Create an account to report and track public infrastructure issues in your neighborhood</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('auth.register') }}">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-dark">Full Legal Name *</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light text-muted"><i class="bi bi-person"></i></span>
+              <input type="text" name="name" class="form-control" placeholder="e.g. Rahul Sharma" value="{{ name or '' }}" required autofocus>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-sm-6">
+              <label class="form-label small fw-semibold text-dark">Email Address *</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light text-muted"><i class="bi bi-envelope"></i></span>
+                <input type="email" name="email" class="form-control" placeholder="name@example.com" value="{{ email or '' }}" required>
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label small fw-semibold text-dark">Mobile Phone Number</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light text-muted"><i class="bi bi-telephone"></i></span>
+                <input type="tel" name="phone" class="form-control" placeholder="+91 98765 43210" value="{{ phone or '' }}">
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-sm-6">
+              <label class="form-label small fw-semibold text-dark">Residential Address / Ward</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light text-muted"><i class="bi bi-geo-alt"></i></span>
+                <input type="text" name="address" class="form-control" placeholder="Apartment / Colony, Ward Number" value="{{ address or '' }}">
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label small fw-semibold text-dark">{{ t('preferred_language') }}</label>
+              <select name="language_pref" class="form-select">
+                <option value="en" {{ 'selected' if lang == 'en' else '' }}>English</option>
+                <option value="kn" {{ 'selected' if lang == 'kn' else '' }}>ಕನ್ನಡ</option>
+                <option value="hi" {{ 'selected' if lang == 'hi' else '' }}>हिन्दी</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-4">
+            <div class="col-sm-6">
+              <label class="form-label small fw-semibold text-dark">Password *</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light text-muted"><i class="bi bi-lock"></i></span>
+                <input type="password" name="password" class="form-control" placeholder="Min. 6 characters" required>
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label small fw-semibold text-dark">Confirm Password *</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light text-muted"><i class="bi bi-shield-check"></i></span>
+                <input type="password" name="confirm_password" class="form-control" placeholder="Repeat password" required>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-civic-teal w-100 py-2 fw-bold mb-3 shadow-sm">
+            <i class="bi bi-check2-circle me-1"></i>Create Citizen Account
+          </button>
+
+          <div class="text-center small text-muted">
+            Already registered?
+            <a href="{{ url_for('auth.login') }}" class="text-teal fw-semibold text-decoration-none">Sign in here</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

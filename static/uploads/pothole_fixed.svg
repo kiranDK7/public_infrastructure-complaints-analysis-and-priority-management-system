@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+  <rect width="100%" height="100%" fill="#334155"/>
+  <rect x="0" y="190" width="600" height="20" fill="#cbd5e1" stroke-dasharray="30 20"/>
+  <!-- Fresh Asphalt Patch -->
+  <ellipse cx="300" cy="240" rx="150" ry="75" fill="#0f172a" stroke="#14b8a6" stroke-width="4"/>
+  <ellipse cx="300" cy="240" rx="130" ry="60" fill="#1e293b"/>
+  <!-- Roller Marks -->
+  <line x1="180" y1="210" x2="420" y2="210" stroke="#334155" stroke-width="2"/>
+  <line x1="170" y1="240" x2="430" y2="240" stroke="#334155" stroke-width="2"/>
+  <line x1="180" y1="270" x2="420" y2="270" stroke="#334155" stroke-width="2"/>
+  <!-- Verified Badge -->
+  <rect x="20" y="20" rx="8" width="240" height="40" fill="#10b981" opacity="0.95"/>
+  <text x="35" y="46" font-family="Arial, sans-serif" font-weight="bold" font-size="16" fill="#ffffff">REPAIRED &amp; ASPHALTED</text>
+  <text x="20" y="380" font-family="Arial, sans-serif" font-size="14" fill="#94a3b8">Smart CivicCare Resolution Photo - Works Dept</text>
+</svg>

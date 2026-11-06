@@ -1,0 +1,669 @@
+{% extends "base.html" %}
+
+{% block title %}Ticket #{{ complaint.ticket_id }} - Smart CivicCare 2.0{% endblock %}
+
+{% block extra_css %}
+<style>
+  #detailMap {
+    height: 240px;
+    border-radius: 8px;
+    z-index: 1;
+  }
+  .chat-box {
+    max-height: 380px;
+    overflow-y: auto;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+  }
+  .chat-bubble {
+    max-width: 80%;
+    padding: 0.65rem 0.95rem;
+    border-radius: 12px;
+    font-size: 0.88rem;
+    margin-bottom: 0.75rem;
+  }
+  .chat-bubble-citizen {
+    background: #e2e8f0;
+    color: #1e293b;
+    margin-right: auto;
+    border-bottom-left-radius: 2px;
+  }
+  .chat-bubble-officer {
+    background: #ccfbf1;
+    color: #0f766e;
+    margin-left: auto;
+    border-bottom-right-radius: 2px;
+  }
+  .chat-bubble-admin {
+    background: #ede9fe;
+    color: #5b21b6;
+    margin-left: auto;
+    border-bottom-right-radius: 2px;
+  }
+  .evidence-thumb {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+  }
+  .hash-pill {
+    font-family: monospace;
+    font-size: 0.68rem;
+    color: #64748b;
+    word-break: break-all;
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Header & Stepper -->
+  <div class="civic-card shadow-sm p-4 mb-4">
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 pb-3 border-bottom">
+      <div>
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+          <span class="badge bg-dark font-monospace px-2 py-1 fs-6">#{{ complaint.ticket_id }}</span>
+          <span class="badge" style="background-color: {{ complaint.department_color or '#0d9488' }}; color: #fff;">
+            <i class="bi {{ complaint.department_icon or 'bi-building' }} me-1"></i>{{ complaint.department_name or 'Unassigned' }}
+          </span>
+          {% if complaint.priority == 'HIGH' %}
+            <span class="badge badge-priority-high"><i class="bi bi-exclamation-triangle-fill me-1"></i>HIGH PRIORITY</span>
+          {% elif complaint.priority == 'MEDIUM' %}
+            <span class="badge badge-priority-medium">MEDIUM PRIORITY</span>
+          {% else %}
+            <span class="badge badge-priority-low">LOW PRIORITY</span>
+          {% endif %}
+          {% if complaint.admin_override %}
+            <span class="badge bg-warning text-dark small" title="Priority adjusted by Municipal Admin"><i class="bi bi-person-fill-gear me-1"></i>Admin Overridden</span>
+          {% endif %}
+        </div>
+        <h4 class="fw-bold text-navy-dark mb-0">{{ complaint.title }}</h4>
+        <div class="small text-muted mt-1">
+          <span>Reported by <strong>{{ complaint.citizen_name }}</strong> on {{ (complaint.created_at|string)[:16] }}</span>
+          <span class="mx-2">&bull;</span>
+          <span>{{ complaint.ward_number }}</span>
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-outline-warning btn-sm text-dark fw-bold rounded-pill" onclick="
+          {% if lang == 'kn' %}
+            CivicAccessibility.speakText('ಟಿಕೆಟ್ ನಂಬರ್ {{ complaint.ticket_id }}. ಸಮಸ್ಯೆ: {{ complaint.title }}. ಪ್ರಸ್ತುತ ಸ್ಥಿತಿ: {{ complaint.status }}.', 'kn');
+          {% elif lang == 'hi' %}
+            CivicAccessibility.speakText('टिकट संख्या {{ complaint.ticket_id }}. समस्या: {{ complaint.title }}. वर्तमान स्थिति: {{ complaint.status }}.', 'hi');
+          {% else %}
+            CivicAccessibility.speakText('Ticket number {{ complaint.ticket_id }}. Issue: {{ complaint.title }}. Current status: {{ complaint.status }}.', 'en');
+          {% endif %}
+        ">
+          <i class="bi bi-volume-up-fill me-1"></i> 🔊 {{ t('listen_help') }}
+        </button>
+        {% set s_clean = complaint.status|lower|replace(' ', '-') %}
+        <div class="text-md-end">
+          <span class="small text-muted d-block">{{ t('status') }}:</span>
+          <span class="status-badge status-badge-{{ s_clean }} fs-6">
+            {{ complaint.status }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 13-Stage Workflow Stepper -->
+    {% set stages = [
+      ('SUBMITTED', 'Reported'),
+      ('PENDING', 'Pending'),
+      ('UNDER REVIEW', 'Review'),
+      ('ASSIGNED', 'Assigned'),
+      ('ACCEPTED', 'Accepted'),
+      ('WORK IN PROGRESS', 'In Progress'),
+      ('RESOLVED', 'Resolved'),
+      ('AWAITING CITIZEN VERIFICATION', 'Verify'),
+      ('COMPLETED', 'Completed')
+    ] %}
+    <div class="stepper-horizontal mt-3">
+      {% for stage_key, stage_label in stages %}
+        {% set is_curr = (complaint.status == stage_key) %}
+        {% set is_past = false %}
+        {% if complaint.status in ['COMPLETED'] %}
+          {% set is_past = true %}
+        {% elif complaint.status in ['AWAITING CITIZEN VERIFICATION', 'RESOLVED'] and stage_key not in ['AWAITING CITIZEN VERIFICATION', 'COMPLETED'] %}
+          {% set is_past = true %}
+        {% elif complaint.status in ['WORK IN PROGRESS', 'ON HOLD'] and stage_key in ['SUBMITTED', 'PENDING', 'UNDER REVIEW', 'ASSIGNED', 'ACCEPTED'] %}
+          {% set is_past = true %}
+        {% elif complaint.status in ['ACCEPTED'] and stage_key in ['SUBMITTED', 'PENDING', 'UNDER REVIEW', 'ASSIGNED'] %}
+          {% set is_past = true %}
+        {% elif complaint.status in ['ASSIGNED'] and stage_key in ['SUBMITTED', 'PENDING', 'UNDER REVIEW'] %}
+          {% set is_past = true %}
+        {% endif %}
+
+        <div class="step-item {{ 'active' if is_curr else '' }} {{ 'completed' if is_past else '' }}">
+          <div class="step-circle">
+            {% if is_past %}
+              <i class="bi bi-check-lg"></i>
+            {% else %}
+              {{ loop.index }}
+            {% endif %}
+          </div>
+          <div class="step-title">{{ stage_label }}</div>
+        </div>
+      {% endfor %}
+    </div>
+
+    {% if complaint.status == 'REOPENED' %}
+      <div class="alert alert-danger py-2 px-3 small mt-3 mb-0 d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-repeat fs-5"></i>
+        <div><strong>Ticket Reopened:</strong> Citizen rejected repair completion. Work returned to department queue for correction.</div>
+      </div>
+    {% elif complaint.status == 'ESCALATED' %}
+      <div class="alert alert-danger py-2 px-3 small mt-3 mb-0 d-flex align-items-center gap-2">
+        <i class="bi bi-fire fs-5"></i>
+        <div><strong>Official Escalation:</strong> Overdue SLA triggered formal escalation to Chief Municipal Commissioner.</div>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="row g-4">
+    <!-- Left Column: Details, Map, Evidence, Citizen Verification & Communication -->
+    <div class="col-lg-8">
+      
+      <!-- Issue Details & Location -->
+      <div class="civic-card shadow-sm p-4 mb-4">
+        <h5 class="fw-bold text-navy-dark mb-3"><i class="bi bi-file-text-fill text-teal me-2"></i>Incident Description &amp; Ground Location</h5>
+        <p class="text-dark mb-3">{{ complaint.description }}</p>
+
+        <div class="row g-3 mb-3 small">
+          <div class="col-sm-6">
+            <span class="text-muted d-block">Street Address / Landmark:</span>
+            <strong>{{ complaint.address }}</strong>
+            {% if complaint.landmark %}
+              <div class="text-muted">Landmark: {{ complaint.landmark }}</div>
+            {% endif %}
+          </div>
+          <div class="col-sm-3">
+            <span class="text-muted d-block">Severity Level:</span>
+            <span class="badge bg-light text-dark border">{{ complaint.severity }}</span>
+          </div>
+          <div class="col-sm-3">
+            <span class="text-muted d-block">People Affected:</span>
+            <strong>{{ complaint.affected_people_estimate }}</strong>
+          </div>
+        </div>
+
+        <!-- Interactive Map -->
+        <div id="detailMap" class="mb-2 border"></div>
+        <div class="d-flex justify-content-between align-items-center small text-muted">
+          <span>Coordinates: {{ complaint.latitude|round(5) }}, {{ complaint.longitude|round(5) }}</span>
+          <span>GPS Accuracy: &plusmn;{{ complaint.gps_accuracy_meters|default(10)|round(1) }}m</span>
+        </div>
+      </div>
+
+      <!-- Explainable AI Triage Card -->
+      <div class="civic-card shadow-sm p-4 mb-4 border-teal">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="d-flex align-items-center gap-2">
+            <div class="civic-brand-icon" style="width: 32px; height: 32px; font-size: 1rem;"><i class="bi bi-cpu-fill"></i></div>
+            <h5 class="fw-bold text-navy-dark mb-0">Explainable AI Triage Breakdown</h5>
+          </div>
+          <span class="badge bg-teal text-white small">AI Confidence: {{ (complaint.ai_category_confidence * 100)|int }}%</span>
+        </div>
+
+        <div class="row g-3 mb-3 small">
+          <div class="col-md-6">
+            <span class="text-muted d-block">NLP Classification:</span>
+            <strong class="text-teal fs-6">{{ complaint.ai_predicted_category }}</strong>
+            <div class="text-muted">Model: Multi-Lingual NLP (TF-IDF + Logistic Regression)</div>
+          </div>
+          <div class="col-md-6">
+            <span class="text-muted d-block">Deterministic Risk Score:</span>
+            <strong class="text-danger fs-6">{{ complaint.ai_priority_score }}/100</strong>
+            <div class="text-muted">Level: {{ complaint.ai_predicted_priority }}</div>
+          </div>
+        </div>
+
+        <div class="p-3 bg-light rounded-3 small">
+          <span class="fw-semibold text-navy-dark d-block mb-1">AI Priority Rationale:</span>
+          <p class="text-muted mb-0">{{ complaint.ai_priority_explanation }}</p>
+        </div>
+
+        {% if complaint.is_duplicate %}
+          <div class="alert alert-warning py-2 px-3 small mt-3 mb-0">
+            <i class="bi bi-link-45deg me-1"></i>Linked as Duplicate Cluster of ticket <strong>#{{ complaint.duplicate_parent_ticket }}</strong> ({{ complaint.duplicate_parent_title }}).
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Live Evidence Gallery with Cryptographic SHA-256 Hashes -->
+      <div class="civic-card shadow-sm p-4 mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h5 class="fw-bold text-navy-dark mb-0"><i class="bi bi-camera-fill text-teal me-2"></i>Live Evidence Gallery (Anti-Spoofing Verified)</h5>
+          <span class="badge bg-light text-secondary border small"><i class="bi bi-shield-check text-success me-1"></i>SHA-256 Checksummed</span>
+        </div>
+
+        {% if evidence_list %}
+          <div class="row g-3">
+            {% for ev in evidence_list %}
+              <div class="col-md-6">
+                <div class="p-2 border rounded-3 bg-light h-100">
+                  <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="badge {{ 'bg-teal text-white' if ev.evidence_type == 'initial_report' else 'bg-success text-white' }} small">
+                      {{ ev.evidence_type|upper|replace('_', ' ') }}
+                    </span>
+                    <span class="badge bg-dark border text-light" style="font-size: 0.65rem;">
+                      {{ ev.uploader_role|upper }}
+                    </span>
+                  </div>
+
+                  {% if ev.file_type == 'video' %}
+                    <video controls class="w-100 rounded-2" style="max-height: 180px; background: #000;">
+                      <source src="{{ url_for('static', filename=ev.file_path) }}" type="video/webm">
+                      Your browser does not support video playback.
+                    </video>
+                  {% else %}
+                    <img src="{{ url_for('static', filename=ev.file_path) }}" class="evidence-thumb" alt="Evidence Photo">
+                  {% endif %}
+
+                  <div class="mt-2 small">
+                    <div class="text-muted" style="font-size: 0.72rem;">Uploaded by {{ ev.uploader_name }} on {{ (ev.created_at|string)[:16] }}</div>
+                    <div class="mt-1">
+                      <span class="text-muted" style="font-size: 0.68rem;">SHA-256:</span>
+                      <div class="hash-pill">{{ ev.sha256_hash or 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted small text-center py-4 mb-0">No photographic or video evidence attached yet.</p>
+        {% endif %}
+      </div>
+
+      <!-- Citizen Verification & Rating Card (Active during verification stage) -->
+      {% if complaint.status == 'AWAITING CITIZEN VERIFICATION' or complaint.status == 'RESOLVED' or complaint.status == 'COMPLETED' %}
+        <div class="civic-card shadow-sm p-4 mb-4 border-warning">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-patch-check-fill text-warning fs-3"></i>
+              <div>
+                <h5 class="fw-bold text-navy-dark mb-0">{{ t('verification_banner_title') }}</h5>
+                <span class="small text-muted">{{ t('verification_banner_subtitle') }}</span>
+              </div>
+            </div>
+            {% if complaint.status == 'COMPLETED' %}
+              <span class="badge bg-success text-white"><i class="bi bi-star-fill text-warning me-1"></i>Verified - Rating {{ complaint.citizen_rating }}/5</span>
+            {% else %}
+              <span class="badge bg-warning text-dark fw-bold">Verification Pending</span>
+            {% endif %}
+          </div>
+
+          {% if complaint.status == 'COMPLETED' %}
+            <div class="p-3 bg-light rounded-3 small">
+              <div class="d-flex align-items-center gap-1 text-warning mb-1">
+                {% for i in range(complaint.citizen_rating or 5) %}
+                  <i class="bi bi-star-fill"></i>
+                {% endfor %}
+                <span class="text-dark fw-bold ms-2">{{ complaint.citizen_rating or 5 }}.0 / 5.0</span>
+              </div>
+              <p class="text-muted mb-0">Feedback: "{{ complaint.citizen_feedback or 'Repair work completed satisfactorily.' }}"</p>
+            </div>
+          {% elif current_user.role == 'citizen' and current_user.id == complaint.citizen_id %}
+            <div class="p-3 bg-light rounded-3 mb-3 border">
+              <strong class="text-navy-dark d-block mb-1">{{ t('verification_banner_subtitle') }}</strong>
+              <span class="small text-muted">Inspect the completion evidence above, then confirm or reopen:</span>
+            </div>
+            <form method="POST" action="{{ url_for('citizen.verify_resolution', complaint_id=complaint.id) }}">
+              <div class="row g-3 mb-3">
+                <div class="col-md-5">
+                  <label class="form-label small fw-bold text-dark">{{ t('rate_service') }}</label>
+                  <select name="rating" class="form-select">
+                    <option value="5" selected>⭐⭐⭐⭐⭐ 5 Stars - Excellent</option>
+                    <option value="4">⭐⭐⭐⭐ 4 Stars - Good</option>
+                    <option value="3">⭐⭐⭐ 3 Stars - Average</option>
+                    <option value="2">⭐⭐ 2 Stars - Poor</option>
+                    <option value="1">⭐ 1 Star - Unsatisfactory</option>
+                  </select>
+                </div>
+                <div class="col-md-7">
+                  <label class="form-label small fw-bold text-dark">{{ t('feedback_comments') }}</label>
+                  <input type="text" name="feedback" class="form-control" placeholder="{{ t('feedback_placeholder') }}" value="Inspected on site, repairs completed properly.">
+                </div>
+              </div>
+              <div class="d-flex flex-wrap gap-2">
+                <button type="submit" name="action" value="confirm" class="btn btn-success btn-lg fw-bold px-4 shadow-sm">
+                  <i class="bi bi-hand-thumbs-up-fill me-1"></i> 👍 {{ t('verify_and_close') }}
+                </button>
+                <button type="submit" name="action" value="reject" class="btn btn-outline-danger btn-lg fw-bold px-3">
+                  <i class="bi bi-arrow-repeat me-1"></i> 👎 {{ t('reopen_issue') }}
+                </button>
+              </div>
+            </form>
+          {% else %}
+            <p class="small text-muted mb-0">Awaiting citizen inspection and verification of resolved evidence.</p>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <!-- Direct Activity & Communication Thread (Section 8) -->
+      <div class="civic-card shadow-sm p-4 mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-chat-dots-fill text-teal fs-5"></i>
+            <h5 class="fw-bold text-navy-dark mb-0">Official Activity &amp; Communication Thread</h5>
+          </div>
+          <span class="badge bg-light text-secondary border small">Direct Citizen &bull; Officer &bull; Admin</span>
+        </div>
+
+        <div class="chat-box mb-3" id="chatThread">
+          {% if messages %}
+            {% for m in messages %}
+              <div class="chat-bubble {{ 'chat-bubble-citizen' if m.sender_role == 'citizen' else ('chat-bubble-officer' if m.sender_role == 'officer' else 'chat-bubble-admin') }}">
+                <div class="d-flex align-items-center justify-content-between small fw-bold mb-1" style="font-size: 0.75rem;">
+                  <span>{{ m.sender_name }} ({{ m.sender_role|upper }})</span>
+                  <span class="text-muted fw-normal">{{ (m.created_at|string)[11:16] }}</span>
+                </div>
+                <div>{{ m.message }}</div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <p class="text-muted small text-center py-3 mb-0">No timeline messages yet. Post a question or operational update below.</p>
+          {% endif %}
+        </div>
+
+        <!-- Post Message Form -->
+        <form method="POST" action="{{ url_for('communications.post_message', complaint_id=complaint.id) }}" class="d-flex gap-2">
+          <input type="text" name="message" class="form-control form-control-sm" placeholder="Post a message to the department or citizen..." required>
+          <button type="submit" class="btn btn-civic-teal btn-sm fw-semibold text-nowrap">
+            <i class="bi bi-send-fill me-1"></i>Post Update
+          </button>
+        </form>
+      </div>
+
+      <!-- Lifecycle Status History & Audit Log -->
+      <div class="civic-card shadow-sm p-4">
+        <h5 class="fw-bold text-navy-dark mb-3"><i class="bi bi-journal-text text-teal me-2"></i>Status Transition Audit Log</h5>
+        <div class="table-responsive">
+          <table class="civic-table table small">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Transition</th>
+                <th>Updated By</th>
+                <th>Remarks / Rationale</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for h in history %}
+                <tr>
+                  <td class="text-nowrap text-muted" style="font-size: 0.75rem;">{{ (h.created_at|string)[:16] }}</td>
+                  <td>
+                    <span class="badge bg-light text-dark border">{{ h.old_status or 'INIT' }}</span>
+                    &rarr;
+                    <span class="badge bg-dark text-white">{{ h.new_status }}</span>
+                  </td>
+                  <td>
+                    <span class="fw-semibold text-dark">{{ h.changed_by_name }}</span>
+                    <span class="badge bg-light text-secondary border ms-1" style="font-size: 0.65rem;">{{ h.changed_by_role }}</span>
+                  </td>
+                  <td class="text-muted">{{ h.remarks }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Operations Panel for Officers and Administrators -->
+    <div class="col-lg-4">
+
+      <!-- Officer Actions Panel (Visible to Department Officers) -->
+      {% if current_user.role == 'officer' and current_user.department_id == complaint.assigned_department_id %}
+        <div class="civic-card shadow-sm p-4 mb-4 border-teal">
+          <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+            <i class="bi bi-tools text-teal fs-5"></i>
+            <h5 class="fw-bold text-navy-dark mb-0">Officer Work Actions</h5>
+          </div>
+
+          <!-- If Assigned: Accept or Reject Assignment -->
+          {% if complaint.status in ['ASSIGNED', 'SUBMITTED', 'PENDING'] %}
+            <div class="mb-3">
+              <span class="small fw-semibold text-dark d-block mb-2">Respond to Work Assignment:</span>
+              <form method="POST" action="{{ url_for('officer.respond_assignment', complaint_id=complaint.id) }}">
+                <div class="mb-2">
+                  <label class="form-label small text-muted">Target Completion Date:</label>
+                  <input type="date" name="expected_completion_date" class="form-control form-control-sm" required>
+                </div>
+                <div class="d-flex gap-2 mb-2">
+                  <button type="submit" name="action" value="accept" class="btn btn-teal btn-sm text-white w-100 fw-bold">
+                    <i class="bi bi-check-lg me-1"></i>Accept Task
+                  </button>
+                  <button type="button" class="btn btn-outline-danger btn-sm w-100" data-bs-toggle="collapse" data-bs-target="#declineBox">
+                    Decline
+                  </button>
+                </div>
+                <div class="collapse mt-2" id="declineBox">
+                  <textarea name="reason" rows="2" class="form-control form-control-sm mb-1" placeholder="Reason for declining assignment..."></textarea>
+                  <button type="submit" name="action" value="reject" class="btn btn-danger btn-sm w-100 py-1">Confirm Decline</button>
+                </div>
+              </form>
+            </div>
+          {% endif %}
+
+          <!-- Status Update & Camera Completion Evidence -->
+          <div class="mb-3 pt-2">
+            <span class="small fw-semibold text-dark d-block mb-2">Update Operational Status:</span>
+            <form method="POST" action="{{ url_for('officer.update_status', complaint_id=complaint.id) }}">
+              <div class="mb-2">
+                <select name="status" class="form-select form-select-sm" required>
+                  <option value="ACCEPTED" {{ 'selected' if complaint.status == 'ACCEPTED' else '' }}>ACCEPTED - Ready for Dispatch</option>
+                  <option value="WORK IN PROGRESS" {{ 'selected' if complaint.status == 'WORK IN PROGRESS' else '' }}>WORK IN PROGRESS - Crew on site</option>
+                  <option value="ON HOLD" {{ 'selected' if complaint.status == 'ON HOLD' else '' }}>ON HOLD - Awaiting parts/weather</option>
+                  <option value="AWAITING CITIZEN VERIFICATION" {{ 'selected' if complaint.status == 'AWAITING CITIZEN VERIFICATION' else '' }}>RESOLVED &rarr; AWAITING CITIZEN VERIFICATION</option>
+                </select>
+              </div>
+              <div class="mb-2">
+                <input type="text" name="remarks" class="form-control form-control-sm" placeholder="Work remarks / repair summary..." required>
+              </div>
+              <button type="submit" class="btn btn-civic-navy btn-sm w-100 fw-bold">
+                <i class="bi bi-arrow-repeat me-1"></i>Save Status Update
+              </button>
+            </form>
+          </div>
+
+          <!-- Upload Live Completion Evidence -->
+          <div class="pt-2 border-top">
+            <span class="small fw-semibold text-dark d-block mb-1">Submit Live Completion Proof:</span>
+            <p class="small text-muted mb-2">Upload live photo or video proof of resolved repair work.</p>
+            <form method="POST" action="{{ url_for('evidence.upload_evidence', complaint_id=complaint.id) }}" enctype="multipart/form-data">
+              <input type="hidden" name="evidence_type" value="completion">
+              <div class="mb-2">
+                <input type="file" name="evidence_file" class="form-control form-control-sm" accept="image/*,video/*" required>
+              </div>
+              <button type="submit" class="btn btn-outline-success btn-sm w-100 fw-bold">
+                <i class="bi bi-camera-fill me-1"></i>Upload Completion Evidence
+              </button>
+            </form>
+          </div>
+
+        </div>
+      {% endif %}
+
+      <!-- Government Work Order & Contractor Sanction Card (For Admins & Department Officers) -->
+      {% if current_user.role in ['admin', 'officer'] %}
+        <div class="civic-card shadow-sm p-4 mb-4 border-warning">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <h6 class="fw-bold text-navy-dark mb-0"><i class="bi bi-file-earmark-ruled-fill text-warning me-2"></i>Government Order &amp; Budget</h6>
+            <span class="badge bg-light text-dark border font-monospace" style="font-size: 0.72rem;">{{ complaint.government_order_no or 'GO-SANCTIONED' }}</span>
+          </div>
+          
+          <div class="small text-muted lh-lg my-2">
+            <div><i class="bi bi-building-gear me-2 text-teal"></i>Contractor: <strong class="text-dark">{{ complaint.contractor_name or 'Contractor Pending' }}</strong></div>
+            <div><i class="bi bi-person-workspace me-2 text-teal"></i>Supervising Engineer: <strong class="text-dark">{{ complaint.engineer_name or 'Er. Executive Engineer' }}</strong></div>
+            <div><i class="bi bi-cash-stack me-2 text-success"></i>Sanctioned Budget: <strong class="text-success font-monospace fs-6">₹{{ "{:,.2f}".format(complaint.budget_allocated or 35000) }}</strong></div>
+            <div><i class="bi bi-calendar3 me-2 text-secondary"></i>Order Date: <strong>{{ complaint.government_order_date or (complaint.created_at|string)[:10] }}</strong></div>
+          </div>
+
+          <div class="d-grid mt-3">
+            <a href="{{ url_for('admin.view_government_order', complaint_id=complaint.id) }}" target="_blank" class="btn btn-outline-dark btn-sm fw-bold">
+              <i class="bi bi-file-earmark-pdf me-1 text-danger"></i>View Official G.O. Copy &amp; Sanction Seal
+            </a>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- Municipal Administrator Controls Panel -->
+      {% if current_user.role == 'admin' %}
+        <div class="civic-card shadow-sm p-4 mb-4 border-danger">
+          <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+            <i class="bi bi-shield-lock-fill text-danger fs-5"></i>
+            <h5 class="fw-bold text-navy-dark mb-0">Admin Command Actions</h5>
+          </div>
+
+          <!-- Assign / Reassign Department, Officer, Contractor & Budget -->
+          <form method="POST" action="{{ url_for('admin.assign_complaint', complaint_id=complaint.id) }}" class="mb-3">
+            <label class="form-label small fw-semibold text-dark mb-1">Assign Department</label>
+            <select name="department_id" class="form-select form-select-sm mb-2" required>
+              {% for d in departments %}
+                <option value="{{ d.id }}" {{ 'selected' if d.id == complaint.assigned_department_id else '' }}>{{ d.name }} ({{ d.code }})</option>
+              {% endfor %}
+            </select>
+
+            <label class="form-label small fw-semibold text-dark mb-1">Assign Officer</label>
+            <select name="officer_id" class="form-select form-select-sm mb-2">
+              <option value="">-- Auto-Assign to Department Queue --</option>
+              {% for off in officers %}
+                <option value="{{ off.id }}" {{ 'selected' if off.id == complaint.assigned_officer_id else '' }}>{{ off.name }} ({{ off.department_name }})</option>
+              {% endfor %}
+            </select>
+
+            <label class="form-label small fw-semibold text-dark mb-1">Assign Government Contractor</label>
+            <select name="contractor_id" class="form-select form-select-sm mb-2">
+              <option value="">-- Select Approved Contractor --</option>
+              {% for c in contractors %}
+                <option value="{{ c.id }}" {{ 'selected' if c.id == complaint.contractor_id else '' }}>{{ c.name }} ({{ c.code }})</option>
+              {% endfor %}
+            </select>
+
+            <label class="form-label small fw-semibold text-dark mb-1">Supervising Engineer</label>
+            <input type="text" name="engineer_name" class="form-control form-control-sm mb-2" placeholder="e.g. Er. Rajesh Kumar, AEE" value="{{ complaint.engineer_name or '' }}">
+
+            <div class="row g-2 mb-2">
+              <div class="col-6">
+                <label class="form-label small fw-semibold text-dark mb-1">Sanctioned Budget (₹)</label>
+                <input type="number" step="1000" name="budget_allocated" class="form-control form-control-sm" placeholder="₹ Amount" value="{{ complaint.budget_allocated or 35000 }}">
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-semibold text-dark mb-1">G.O. Reference No.</label>
+                <input type="text" name="government_order_no" class="form-control form-control-sm" placeholder="GO-BBMP-..." value="{{ complaint.government_order_no or '' }}">
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-civic-teal btn-sm w-100 fw-bold mt-1">
+              <i class="bi bi-check2-circle me-1"></i>Update Assignment &amp; Work Order
+            </button>
+          </form>
+
+          <!-- Priority Override -->
+          <form method="POST" action="{{ url_for('admin.override_priority', complaint_id=complaint.id) }}" class="mb-3 pt-2 border-top">
+            <label class="form-label small fw-semibold text-dark">Admin Priority Override</label>
+            <div class="d-flex gap-2 mb-2">
+              <select name="priority" class="form-select form-select-sm">
+                {% for p in priorities %}
+                  <option value="{{ p }}" {{ 'selected' if p == complaint.priority else '' }}>{{ p }} Priority</option>
+                {% endfor %}
+              </select>
+            </div>
+            <input type="text" name="reason" class="form-control form-control-sm mb-2" placeholder="Administrative reason for override...">
+            <button type="submit" class="btn btn-outline-warning text-dark btn-sm w-100 fw-bold">
+              <i class="bi bi-arrow-up-right-circle me-1"></i>Override Priority
+            </button>
+          </form>
+
+          <!-- Immediate Escalation Trigger -->
+          {% if complaint.status != 'ESCALATED' and complaint.status not in ['COMPLETED', 'RESOLVED'] %}
+            <form method="POST" action="{{ url_for('admin.escalate_complaint', complaint_id=complaint.id) }}" class="pt-2 border-top">
+              <input type="hidden" name="escalation_reason" value="Commissioner priority intervention">
+              <button type="submit" class="btn btn-outline-danger btn-sm w-100 fw-bold" onclick="return confirm('Escalate this complaint immediately to the Commissioner?');">
+                <i class="bi bi-fire me-1"></i>Escalate to Commissioner
+              </button>
+            </form>
+          {% endif %}
+
+        </div>
+      {% endif %}
+
+      <!-- Department Contact & Roster Card -->
+      <div class="civic-card shadow-sm p-4">
+        <h6 class="fw-bold text-navy-dark mb-3"><i class="bi bi-building text-teal me-2"></i>Department Oversight</h6>
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="civic-brand-icon" style="background-color: {{ complaint.department_color or '#0d9488' }}; width: 42px; height: 42px;">
+            <i class="bi {{ complaint.department_icon or 'bi-building' }} fs-5"></i>
+          </div>
+          <div>
+            <strong class="text-navy-dark d-block">{{ complaint.department_name or 'Unassigned' }}</strong>
+            <span class="badge bg-light text-secondary border small">{{ complaint.department_code or 'N/A' }}</span>
+          </div>
+        </div>
+
+        <div class="small text-muted lh-lg">
+          <div><i class="bi bi-person-badge me-2 text-teal"></i>Assigned Officer: <strong>{{ complaint.officer_name or 'Queue Pending' }}</strong></div>
+          {% if complaint.officer_email %}
+            <div><i class="bi bi-envelope me-2 text-teal"></i>Email: {{ complaint.officer_email }}</div>
+          {% endif %}
+          {% if complaint.expected_completion_date %}
+            <div><i class="bi bi-calendar-check me-2 text-warning"></i>Expected Target: <strong>{{ complaint.expected_completion_date }}</strong></div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/accessibility.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Leaflet Location Pin Map
+    var lat = {{ complaint.latitude }};
+    var lng = {{ complaint.longitude }};
+    var map = L.map('detailMap').setView([lat, lng], 15);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    var markerColor = '{{ "#ef4444" if complaint.priority == "HIGH" else ("#f59e0b" if complaint.priority == "MEDIUM" else "#10b981") }}';
+    
+    var icon = L.divIcon({
+      className: 'custom-pin',
+      html: '<div style="background-color:' + markerColor + '; width:18px; height:18px; border-radius:50%; border:3px solid #fff; box-shadow:0 0 6px rgba(0,0,0,0.4);"></div>',
+      iconSize: [18, 18],
+      iconAnchor: [9, 9]
+    });
+
+    L.marker([lat, lng], { icon: icon }).addTo(map)
+      .bindPopup("<strong>#{{ complaint.ticket_id }}</strong><br>{{ complaint.title }}")
+      .openPopup();
+
+    // Accuracy Circle
+    L.circle([lat, lng], {
+      color: markerColor,
+      fillColor: markerColor,
+      fillOpacity: 0.15,
+      radius: {{ complaint.gps_accuracy_meters|default(15) }}
+    }).addTo(map);
+  });
+</script>
+{% endblock %}
+

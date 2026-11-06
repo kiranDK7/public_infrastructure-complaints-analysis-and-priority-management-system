@@ -1,0 +1,701 @@
+{% extends "base.html" %}
+
+{% block title %}Smart CivicCare - AI-Powered Public Infrastructure Complaint Management{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section text-center text-lg-start">
+  <div class="container px-4">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-7">
+        <div class="hero-pill">
+          <i class="bi bi-cpu-fill text-info"></i> SMART CITIES – TRACK T1 HACKATHON
+        </div>
+        <h1 class="display-4 fw-bold lh-sm mb-3">
+          AI-Powered Public Infrastructure Complaint Analysis &amp; Priority Management
+        </h1>
+        <p class="lead text-light opacity-90 mb-4" style="font-size: 1.15rem; max-width: 620px;">
+          Empowering citizens to report civic hazards with geo-tagged photographic evidence.
+          Powered by Natural Language Processing, intelligent multi-factor priority prediction,
+          and spatial-semantic duplicate detection.
+        </p>
+
+        <div class="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start mb-4">
+          {% if current_user.id %}
+            {% if current_user.role == 'citizen' %}
+              <a href="{{ url_for('citizen.submit_complaint') }}" class="btn btn-civic-teal btn-lg px-4 shadow">
+                <i class="bi bi-camera-fill me-2"></i>Report a Problem
+              </a>
+              <a href="{{ url_for('citizen.dashboard') }}" class="btn btn-outline-light btn-lg px-4">
+                <i class="bi bi-speedometer2 me-2"></i>Go to Dashboard
+              </a>
+            {% elif current_user.role == 'admin' %}
+              <a href="{{ url_for('admin.dashboard') }}" class="btn btn-civic-teal btn-lg px-4 shadow">
+                <i class="bi bi-speedometer2 me-2"></i>Open Admin Command Center
+              </a>
+            {% elif current_user.role == 'officer' %}
+              <a href="{{ url_for('officer.dashboard') }}" class="btn btn-civic-teal btn-lg px-4 shadow">
+                <i class="bi bi-briefcase-fill me-2"></i>Open Officer Workspace
+              </a>
+            {% endif %}
+          {% else %}
+            <a href="{{ url_for('citizen.submit_complaint') }}" class="btn btn-civic-teal btn-lg px-4 shadow">
+              <i class="bi bi-camera-fill me-2"></i>Report an Issue
+            </a>
+            <a href="#accountAccessSection" class="btn btn-outline-light btn-lg px-4">
+              <i class="bi bi-box-arrow-in-right me-2"></i>Sign In Portal &darr;
+            </a>
+          {% endif %}
+        </div>
+
+        <!-- Live City Counter Stats -->
+        <div class="row g-3 pt-3 border-top border-secondary">
+          <div class="col-4">
+            <h3 class="fw-bold mb-0 text-white">{{ total_registered }}</h3>
+            <span class="small text-secondary">Total Registered</span>
+          </div>
+          <div class="col-4">
+            <h3 class="fw-bold mb-0 text-info">{{ total_resolved }}</h3>
+            <span class="small text-secondary">Resolved Issues</span>
+          </div>
+          <div class="col-4">
+            <h3 class="fw-bold mb-0 text-warning">{{ active_officers }}</h3>
+            <span class="small text-secondary">Zonal Officers</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-5">
+        <!-- Live AI Triage Simulator Card -->
+        <div class="civic-card bg-dark text-white border-secondary shadow-lg p-4">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <div class="d-flex align-items-center gap-2">
+              <span class="ai-badge"><i class="bi bi-cpu"></i> AI CORE ACTIVE</span>
+              <span class="small text-info fw-semibold">Scikit-Learn NLP</span>
+            </div>
+            <span class="badge bg-success bg-opacity-25 text-success border border-success">Live Triage</span>
+          </div>
+
+          <div class="bg-black bg-opacity-50 p-3 rounded-3 border border-secondary mb-3">
+            <div class="text-secondary small mb-1"><i class="bi bi-terminal me-1"></i>Sample Citizen Report:</div>
+            <p class="small text-light mb-0 fst-italic">
+              "Lethal open manhole cover missing on busy walkway near metro station, pedestrians in danger of falling..."
+            </p>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <div class="p-2 rounded bg-secondary bg-opacity-25 border border-secondary">
+                <span class="text-secondary small d-block">AI Category</span>
+                <span class="fw-bold text-white small"><i class="bi bi-water text-info me-1"></i>Drainage Problems</span>
+                <span class="badge bg-teal bg-opacity-25 text-info ms-1" style="font-size: 0.65rem;">94% Match</span>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-2 rounded bg-secondary bg-opacity-25 border border-secondary">
+                <span class="text-secondary small d-block">AI Priority Engine</span>
+                <span class="badge badge-priority-high">HIGH (Score: 92/100)</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-2 rounded bg-warning bg-opacity-10 border border-warning border-opacity-25 small text-warning mb-3">
+            <i class="bi bi-geo-alt-fill me-1"></i><strong>Duplicate Guard:</strong> Cross-checks 500m proximity &amp; TF-IDF text similarity to link parent tickets automatically.
+          </div>
+
+          <div class="d-grid">
+            <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-outline-info">
+              Test AI Simulator in Admin Center <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Everyday Citizen Friendly Guide -->
+<section class="py-4 bg-light border-bottom">
+  <div class="container px-4">
+    <div class="p-4 rounded-4 bg-white shadow-sm border border-teal">
+      <div class="row align-items-center g-4">
+        <div class="col-lg-7">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge bg-success text-white px-2 py-1"><i class="bi bi-patch-check-fill me-1"></i>{{ t('village_city_care') }}</span>
+            <span class="badge bg-light text-dark border">{{ t('simple_mode') }}</span>
+          </div>
+          <h3 class="fw-bold text-navy-dark mb-2">
+            {% if lang == 'kn' %}
+              ಯಾವುದೇ ತಂತ್ರಜ್ಞಾನದ ಗೊಂದಲವಿಲ್ಲದೆ ೩ ಸರಳ ಹಂತಗಳಲ್ಲಿ ದೂರು ನೀಡಿ
+            {% elif lang == 'hi' %}
+              बिना किसी तकनीकी परेशानी के ३ सरल चरणों में शिकायत दर्ज करें
+            {% else %}
+              Report Public Infrastructure Issues in 3 Simple Steps
+            {% endif %}
+          </h3>
+          <p class="text-muted small mb-3">
+            {% if lang == 'kn' %}
+              ಗ್ರಾಮೀಣ ಮತ್ತು ನಗರ ನಾಗರಿಕರಿಗಾಗಿ: ಲೈವ್ ಫೋಟೋ ಕ್ಲಿಕ್ ಮಾಡಿ, ಮಾತನಾಡಿ ಅಥವಾ ಆಯ್ಕೆ ಮಾಡಿ, ಅಧಿಕಾರಿಗಳು ತಕ್ಷಣ ಸ್ಪಂದಿಸುತ್ತಾರೆ.
+            {% elif lang == 'hi' %}
+              ग्रामीण एवं शहरी सभी नागरिकों के लिए: लाइव फोटो लें, बोलकर या चुनकर बताएं, और संबंधित अधिकारी तुरंत कार्रवाई करेंगे।
+            {% else %}
+              Designed for rural and urban citizens alike: snap live photo, speak or select your issue, and municipal officers respond directly.
+            {% endif %}
+          </p>
+          <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('citizen.submit_complaint') }}" class="btn btn-civic-teal fw-bold px-4 py-2 shadow-sm">
+              <i class="bi bi-camera-fill me-1 fs-5"></i>{{ t('report_issue') }}
+            </a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-outline-dark fw-semibold px-3 py-2">
+              <i class="bi bi-person-check me-1"></i>{{ t('quick_demo_logins') }}
+            </a>
+          </div>
+        </div>
+
+        <div class="col-lg-5">
+          <div class="row g-2 text-center">
+            <div class="col-4">
+              <div class="p-3 rounded-3 bg-light border h-100">
+                <div class="fs-2 mb-1">📸</div>
+                <strong class="small d-block text-dark">{{ t('step_guide_1_title') }}</strong>
+                <span class="text-muted" style="font-size: 0.7rem;">{{ t('step_guide_1_desc') }}</span>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="p-3 rounded-3 bg-light border h-100">
+                <div class="fs-2 mb-1">🎤</div>
+                <strong class="small d-block text-dark">
+                  {% if lang == 'kn' %}೨. ಮಾತನಾಡಿ{% elif lang == 'hi' %}२. बोलकर बताएं{% else %}2. Speak Issue{% endif %}
+                </strong>
+                <span class="text-muted" style="font-size: 0.7rem;">
+                  {% if lang == 'kn' %}ಧ್ವನಿ ಇನ್‌ಪುಟ್{% elif lang == 'hi' %}आवाज इनपुट{% else %}Voice Dictation{% endif %}
+                </span>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="p-3 rounded-3 bg-light border h-100">
+                <div class="fs-2 mb-1">🛠️</div>
+                <strong class="small d-block text-dark">{{ t('step_guide_3_title') }}</strong>
+                <span class="text-muted" style="font-size: 0.7rem;">{{ t('step_guide_3_desc') }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 Municipal Core Categories Section -->
+<section class="py-5 bg-white border-bottom">
+  <div class="container px-4">
+    <div class="text-center max-w-700 mx-auto mb-5">
+      <span class="text-uppercase fw-bold text-teal small" style="color: var(--civic-teal);">Municipal Coverage</span>
+      <h2 class="fw-bold text-navy-dark mt-1">6 Intelligent Problem Classifications</h2>
+      <p class="text-muted">
+        Our natural language processing pipeline classifies citizen descriptions across 6 core urban civic categories with confidence scoring.
+      </p>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="civic-card h-100">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="kpi-icon-bubble kpi-bubble-teal"><i class="bi bi-cone-striped"></i></div>
+            <div>
+              <h6 class="fw-bold mb-0">Road Damage</h6>
+              <span class="small text-muted">Potholes, cracks, asphalt erosion</span>
+            </div>
+          </div>
+          <p class="small text-muted mb-0">
+            Detects craters, tar peeling, road subsidence, and bridge hazards. Auto-prioritized by traffic risk and pedestrian danger.
+          </p>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="civic-card h-100">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="kpi-icon-bubble kpi-bubble-blue"><i class="bi bi-droplet-half"></i></div>
+            <div>
+              <h6 class="fw-bold mb-0">Water Leakage</h6>
+              <span class="small text-muted">Pipeline bursts, potable leaks</span>
+            </div>
+          </div>
+          <p class="small text-muted mb-0">
+            Identifies drinking water main line fractures, high-pressure geysers, contamination alerts, and community faucet wastage.
+          </p>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="civic-card h-100">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="kpi-icon-bubble kpi-bubble-amber"><i class="bi bi-trash3"></i></div>
+            <div>
+              <h6 class="fw-bold mb-0">Garbage Collection</h6>
+              <span class="small text-muted">Overflowing bins, dump piles</span>
+            </div>
+          </div>
+          <p class="small text-muted mb-0">
+            Monitors uncollected wet waste, public market debris, illegal chemical dumping, and dispatches municipal compactors.
+          </p>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="civic-card h-100">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="kpi-icon-bubble kpi-bubble-amber"><i class="bi bi-lightbulb"></i></div>
+            <div>
+              <h6 class="fw-bold mb-0">Streetlight Failure</h6>
+              <span class="small text-muted">Outages, sparking poles, dark roads</span>
+            </div>
+          </div>
+          <p class="small text-muted mb-0">
+            Surfaces blackout corridors, dangling live wires, defective timers, and electrical hazards to guarantee public safety.
+          </p>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="civic-card h-100">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="kpi-icon-bubble kpi-bubble-red"><i class="bi bi-water"></i></div>
+            <div>
+              <h6 class="fw-bold mb-0">Drainage Problems</h6>
+              <span class="small text-muted">Open manholes, sewage overflow</span>
+            </div>
+          </div>
+          <p class="small text-muted mb-0">
+            Flags critical open manholes, clogged storm culverts, waterlogged intersections, and residential sewage backflows.
+          </p>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="civic-card h-100">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="kpi-icon-bubble kpi-bubble-green"><i class="bi bi-bank"></i></div>
+            <div>
+              <h6 class="fw-bold mb-0">Public Infrastructure</h6>
+              <span class="small text-muted">Broken benches, damaged bus stops</span>
+            </div>
+          </div>
+          <p class="small text-muted mb-0">
+            Manages parks, vandalized seating, broken pedestrian foot overbridge railings, and damaged pavement tiles.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Interactive Live Map Preview -->
+<section class="py-5 bg-light">
+  <div class="container px-4">
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4">
+      <div>
+        <span class="text-uppercase fw-bold text-teal small" style="color: var(--civic-teal);">Geospatial Telemetry</span>
+        <h2 class="fw-bold text-navy-dark mt-1">Live Smart City Infrastructure Map</h2>
+        <p class="text-muted mb-0">Real-time GPS complaint markers across city corridors with priority color-coding.</p>
+      </div>
+      <div class="d-flex align-items-center gap-2 mt-3 mt-md-0">
+        <span class="badge badge-priority-high"><i class="bi bi-circle-fill me-1"></i>Red: High</span>
+        <span class="badge badge-priority-medium"><i class="bi bi-circle-fill me-1"></i>Orange: Medium</span>
+        <span class="badge badge-priority-low"><i class="bi bi-circle-fill me-1"></i>Green: Low</span>
+      </div>
+    </div>
+
+    <div class="civic-card p-2">
+      <div id="landingComplaintsMap" class="civic-map-container" style="height: 440px;"></div>
+    </div>
+  </div>
+</section>
+
+<!-- Resolved Complaints Showcase (Before & After) -->
+{% if resolved_showcase %}
+<section class="py-5 bg-white border-top">
+  <div class="container px-4">
+    <div class="text-center max-w-700 mx-auto mb-5">
+      <span class="text-uppercase fw-bold text-success small">Verified Results</span>
+      <h2 class="fw-bold text-navy-dark mt-1">Before &amp; After Resolution Showcase</h2>
+      <p class="text-muted">
+        Every completed ticket requires departmental photographic evidence and resolution notes before sign-off.
+      </p>
+    </div>
+
+    <div class="row g-4">
+      {% for comp in resolved_showcase %}
+      <div class="col-lg-4">
+        <div class="civic-card h-100 d-flex flex-column">
+          <div class="row g-1 mb-3">
+            <div class="col-6 position-relative">
+              <img src="{{ url_for('static', filename=comp.photo_path) if comp.photo_path else url_for('static', filename='uploads/pothole_1.svg') }}"
+                   class="img-fluid rounded border" style="height: 140px; width: 100%; object-fit: cover;" alt="Reported Hazard">
+              <span class="position-absolute top-0 start-0 m-2 badge bg-danger" style="font-size: 0.65rem;">REPORTED</span>
+            </div>
+            <div class="col-6 position-relative">
+              <img src="{{ url_for('static', filename=comp.resolution_photo_path) if comp.resolution_photo_path else url_for('static', filename='uploads/pothole_fixed.svg') }}"
+                   class="img-fluid rounded border" style="height: 140px; width: 100%; object-fit: cover;" alt="Resolved Asset">
+              <span class="position-absolute top-0 start-0 m-2 badge bg-success" style="font-size: 0.65rem;">RESOLVED</span>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="badge bg-light text-secondary border">{{ comp.ticket_id }}</span>
+            <span class="badge bg-success bg-opacity-25 text-success"><i class="bi bi-check2-circle me-1"></i>Completed</span>
+          </div>
+
+          <h6 class="fw-bold text-dark text-truncate mb-2" title="{{ comp.title }}">{{ comp.title }}</h6>
+          <p class="small text-muted flex-grow-1 mb-3" style="font-size: 0.82rem;">
+            {{ comp.resolution_notes[:140] if comp.resolution_notes else "Repairs inspected and verified by municipal engineering team." }}...
+          </p>
+
+          <div class="border-top pt-2 d-flex justify-content-between align-items-center small text-muted">
+            <span><i class="bi bi-building me-1"></i>{{ comp.department_name or 'Public Works' }}</span>
+            <a href="{{ url_for('citizen.complaint_detail', complaint_id=comp.id) }}" class="text-teal fw-semibold text-decoration-none">View Proof &rarr;</a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- ================================================================= -->
+<!-- SECTION: ACCOUNT ACCESS, SIGN IN & SIGN OUT (INSIDE THE WEBSITE)   -->
+<!-- ================================================================= -->
+<section id="accountAccessSection" class="py-5 bg-dark text-light border-top border-secondary">
+  <div class="container px-4">
+    
+    <div class="text-center max-w-700 mx-auto mb-4">
+      <div class="d-inline-flex align-items-center gap-2 mb-2">
+        <span class="badge bg-teal text-white px-3 py-1"><i class="bi bi-shield-lock-fill me-1"></i>Smart CivicCare Portal</span>
+        <span class="badge bg-secondary text-light">Official Authentication</span>
+      </div>
+      <h2 class="fw-bold text-white mb-2">Account Sign In &amp; System Access</h2>
+      <p class="text-secondary small mb-0">
+        Access municipal command dashboards, report civic problems, or manage public works directly inside the Smart CivicCare platform.
+      </p>
+    </div>
+
+    {% if current_user.id %}
+      <!-- ACTIVE LOGGED IN SESSION CARD (SIGN OUT OPTION INSIDE WEBSITE AT LAST OF HOME PAGE) -->
+      <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-7">
+          <div class="civic-card bg-black bg-opacity-40 border border-secondary p-4 p-md-5 rounded-4 shadow-lg text-center">
+            
+            <div class="d-inline-flex align-items-center justify-content-center bg-teal bg-opacity-25 text-info rounded-circle mb-3" style="width: 72px; height: 72px; font-size: 2.2rem;">
+              <i class="bi bi-person-check-fill"></i>
+            </div>
+            
+            <div class="mb-3">
+              <span class="badge bg-success bg-opacity-25 text-success border border-success px-3 py-1 mb-2">
+                <i class="bi bi-record-circle-fill me-1"></i>Active Authenticated Session
+              </span>
+              <h3 class="fw-bold text-white mb-1">{{ current_user.name }}</h3>
+              <p class="text-secondary small mb-0">{{ current_user.email }}</p>
+            </div>
+
+            <div class="p-3 bg-secondary bg-opacity-10 rounded-3 border border-secondary mb-4 text-start">
+              <div class="row g-2 align-items-center small">
+                <div class="col-sm-4">
+                  <span class="text-secondary d-block">Role:</span>
+                  <span class="badge bg-info text-dark font-monospace fw-bold">{{ current_user.role|upper }}</span>
+                </div>
+                <div class="col-sm-4">
+                  <span class="text-secondary d-block">Department:</span>
+                  <span class="text-light fw-semibold">{{ current_user.department_name or 'General Citizen Public' }}</span>
+                </div>
+                <div class="col-sm-4">
+                  <span class="text-secondary d-block">Status:</span>
+                  <span class="text-success fw-bold"><i class="bi bi-check2-circle me-1"></i>Authorized</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
+              {% if current_user.role == 'admin' %}
+                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-civic-teal btn-lg px-4 fw-bold">
+                  <i class="bi bi-speedometer2 me-2"></i>Open Admin Command Center
+                </a>
+              {% elif current_user.role == 'officer' %}
+                <a href="{{ url_for('officer.dashboard') }}" class="btn btn-civic-teal btn-lg px-4 fw-bold">
+                  <i class="bi bi-briefcase-fill me-2"></i>Open Officer Workspace
+                </a>
+              {% else %}
+                <a href="{{ url_for('citizen.dashboard') }}" class="btn btn-civic-teal btn-lg px-4 fw-bold">
+                  <i class="bi bi-speedometer2 me-2"></i>Go to Citizen Dashboard
+                </a>
+              {% endif %}
+
+              <a href="{{ url_for('citizen.profile') }}" class="btn btn-outline-light btn-lg px-3">
+                <i class="bi bi-person me-1"></i>Profile
+              </a>
+
+              <!-- Prominent Sign Out Button at the Last in the Home Page -->
+              <a href="{{ url_for('auth.logout') }}" class="btn btn-danger btn-lg px-4 fw-bold shadow">
+                <i class="bi bi-box-arrow-right me-2"></i>Sign Out of Account
+              </a>
+            </div>
+
+            <p class="text-secondary mt-4 mb-0" style="font-size: 0.78rem;">
+              <i class="bi bi-shield-check text-info me-1"></i>Clicking "Sign Out" securely ends your session and clears browser tokens.
+            </p>
+
+          </div>
+        </div>
+      </div>
+
+    {% else %}
+      <!-- EMBEDDED IN-PAGE ROLE-AWARE SIGN IN PORTAL (SEPARATED CITIZEN VS ADMIN/OFFICER) -->
+      <div class="row g-4 justify-content-center align-items-stretch">
+        
+        <!-- Left Column: In-Page Sign In with Citizen & Staff Tabs -->
+        <div class="col-lg-7 col-xl-6">
+          <div class="civic-card bg-black bg-opacity-40 border border-secondary p-4 p-md-5 rounded-4 shadow-lg h-100 d-flex flex-column justify-content-between">
+            
+            <div>
+              <!-- Navigation Tabs: Citizen vs Staff -->
+              <ul class="nav nav-pills nav-fill mb-4 p-1 bg-dark rounded-3 border border-secondary" id="loginRoleTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link active fw-bold small text-white py-2" id="citizen-tab" data-bs-toggle="pill" data-bs-target="#citizenTabPane" type="button" role="tab">
+                    <i class="bi bi-person-fill text-info me-1"></i>Citizen Login (Easy)
+                  </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link fw-bold small text-light py-2" id="staff-tab" data-bs-toggle="pill" data-bs-target="#staffTabPane" type="button" role="tab">
+                    <i class="bi bi-shield-lock-fill text-warning me-1"></i>Administration &amp; Officers
+                  </button>
+                </li>
+              </ul>
+
+              <div class="tab-content" id="loginTabContent">
+                <!-- TAB 1: CITIZEN LOGIN (EASY & ACCESSIBLE FOR EVERYONE) -->
+                <div class="tab-pane fade show active" id="citizenTabPane" role="tabpanel">
+                  <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary">
+                    <div>
+                      <h5 class="fw-bold text-white mb-0">Citizen / Public Login</h5>
+                      <span class="text-secondary small" style="font-size: 0.75rem;">Simple &amp; fast access for city and village residents</span>
+                    </div>
+                    <span class="badge bg-success bg-opacity-25 text-success border border-success">Public Access</span>
+                  </div>
+
+                  <form method="POST" action="{{ url_for('auth.login') }}">
+                    <input type="hidden" name="from_home" value="1">
+                    <input type="hidden" name="portal_type" value="citizen">
+
+                    <div class="mb-3">
+                      <label class="form-label small fw-semibold text-light">Mobile Phone Number or Email</label>
+                      <div class="input-group">
+                        <span class="input-group-text bg-dark border-secondary text-info"><i class="bi bi-phone"></i></span>
+                        <input type="text" id="citizenLoginInput" name="email" class="form-control bg-dark text-white border-secondary" placeholder="e.g. 9876543210 or citizen@example.com" required>
+                      </div>
+                      <span class="text-secondary" style="font-size: 0.72rem;">You can enter either your 10-digit mobile number or your email.</span>
+                    </div>
+
+                    <div class="mb-3">
+                      <label class="form-label small fw-semibold text-light">Password</label>
+                      <div class="input-group">
+                        <span class="input-group-text bg-dark border-secondary text-secondary"><i class="bi bi-lock"></i></span>
+                        <input type="password" id="citizenPasswordInput" name="password" class="form-control bg-dark text-white border-secondary" placeholder="Enter your password" required>
+                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassField('citizenPasswordInput', 'toggleCitizenPassIcon')">
+                          <i class="bi bi-eye" id="toggleCitizenPassIcon"></i>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3 small">
+                      <div class="form-check">
+                        <input class="form-check-input bg-dark border-secondary" type="checkbox" id="citRemember">
+                        <label class="form-check-label text-secondary" for="citRemember">Keep me logged in</label>
+                      </div>
+                      <a href="{{ url_for('auth.register') }}" class="text-info text-decoration-none">Need an account?</a>
+                    </div>
+
+                    <button type="submit" class="btn btn-civic-teal w-100 py-2 fw-bold fs-6 shadow">
+                      <i class="bi bi-box-arrow-in-right me-2"></i>Sign In as Citizen
+                    </button>
+                  </form>
+
+                  <!-- 1-Click Fast Citizen Demo Button -->
+                  <div class="mt-3 p-2 bg-secondary bg-opacity-10 rounded border border-secondary text-center">
+                    <span class="text-secondary small d-block mb-1 font-monospace" style="font-size: 0.72rem;">Instant One-Click Citizen Test:</span>
+                    <button type="button" class="btn btn-sm btn-outline-light w-100 py-1" onclick="fillHomeLogin('citizen@example.com', 'citizen123', 'citizen')">
+                      <i class="bi bi-person-check me-1 text-info"></i>Fill Citizen Demo (Rahul &bull; citizen@example.com)
+                    </button>
+                  </div>
+                </div>
+
+                <!-- TAB 2: MUNICIPAL ADMINISTRATION & DEPARTMENT OFFICERS (RESTRICTED GOVT ONLY) -->
+                <div class="tab-pane fade" id="staffTabPane" role="tabpanel">
+                  <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary">
+                    <div>
+                      <h5 class="fw-bold text-white mb-0">Government Staff Command</h5>
+                      <span class="text-warning small" style="font-size: 0.75rem;">Restricted to Commissioned Officers &amp; Administrators</span>
+                    </div>
+                    <span class="badge bg-danger bg-opacity-25 text-danger border border-danger">Govt Authorized</span>
+                  </div>
+
+                  <div class="alert alert-warning bg-warning bg-opacity-10 border border-warning border-opacity-25 p-2 mb-3 small" style="font-size: 0.75rem;">
+                    <i class="bi bi-shield-exclamation text-warning me-1"></i>
+                    <strong>Official Notice:</strong> Public citizens cannot log in here. Only Municipal Administrators can issue and share credentials with respected departments and officers.
+                  </div>
+
+                  <form method="POST" action="{{ url_for('auth.login') }}">
+                    <input type="hidden" name="from_home" value="1">
+                    <input type="hidden" name="portal_type" value="admin">
+
+                    <div class="mb-3">
+                      <label class="form-label small fw-semibold text-light">Official Government Email / Username</label>
+                      <div class="input-group">
+                        <span class="input-group-text bg-dark border-secondary text-warning"><i class="bi bi-person-badge"></i></span>
+                        <input type="email" id="staffLoginEmail" name="email" class="form-control bg-dark text-white border-secondary" placeholder="e.g. admin@smartcivic.gov" required>
+                      </div>
+                    </div>
+
+                    <div class="mb-3">
+                      <label class="form-label small fw-semibold text-light">Official Password</label>
+                      <div class="input-group">
+                        <span class="input-group-text bg-dark border-secondary text-secondary"><i class="bi bi-key"></i></span>
+                        <input type="password" id="staffLoginPassword" name="password" class="form-control bg-dark text-white border-secondary" placeholder="Enter issued password" required>
+                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassField('staffLoginPassword', 'toggleStaffPassIcon')">
+                          <i class="bi bi-eye" id="toggleStaffPassIcon"></i>
+                        </button>
+                      </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning text-dark w-100 py-2 fw-bold fs-6 shadow">
+                      <i class="bi bi-shield-lock-fill me-2"></i>Authenticate Administrative Staff
+                    </button>
+                  </form>
+
+                  <!-- 1-Click Fast Fill for Admin & Officers -->
+                  <div class="mt-3 pt-2 border-top border-secondary">
+                    <span class="text-secondary small d-block mb-1 font-monospace" style="font-size: 0.72rem;">Authorized Staff One-Click Fills:</span>
+                    <div class="d-flex gap-1">
+                      <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2 flex-grow-1" style="font-size: 0.72rem;" onclick="fillHomeLogin('admin@smartcivic.gov', 'admin123', 'admin')">
+                        <i class="bi bi-shield-lock me-1"></i>Admin
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-warning py-1 px-2 flex-grow-1" style="font-size: 0.72rem;" onclick="fillHomeLogin('officer.roads@smartcivic.gov', 'officer123', 'admin')">
+                        <i class="bi bi-cone-striped me-1"></i>Roads Officer
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-info py-1 px-2 flex-grow-1" style="font-size: 0.72rem;" onclick="fillHomeLogin('officer.drainage@smartcivic.gov', 'officer123', 'admin')">
+                        <i class="bi bi-water me-1"></i>Drainage Officer
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="text-center pt-3 border-top border-secondary small text-secondary" style="font-size: 0.75rem;">
+              <i class="bi bi-lock-fill text-info me-1"></i>SSL Encrypted &bull; Role-Segregated Government Platform
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Right Column: New Citizen Registration & Simple Guide -->
+        <div class="col-lg-5 col-xl-5">
+          <div class="civic-card bg-black bg-opacity-40 border border-secondary p-4 p-md-5 rounded-4 shadow-lg h-100 d-flex flex-column justify-content-between">
+            
+            <div>
+              <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom border-secondary">
+                <i class="bi bi-person-plus-fill text-teal fs-4"></i>
+                <h5 class="fw-bold text-white mb-0">Easy Citizen Registration</h5>
+              </div>
+
+              <p class="text-light text-opacity-90 small mb-3">
+                Residents of any city ward or village can register a free account in 30 seconds to report broken roads, water leaks, overflowing garbage, or streetlights.
+              </p>
+
+              <div class="p-3 bg-secondary bg-opacity-10 rounded-3 border border-secondary mb-4">
+                <div class="d-flex align-items-center gap-2 text-info small fw-bold mb-2">
+                  <i class="bi bi-check-circle-fill"></i> Designed For Everyone To Use:
+                </div>
+                <ul class="list-unstyled small text-secondary lh-lg mb-0 ps-2">
+                  <li><i class="bi bi-phone me-2 text-teal"></i>Login with your Mobile Number or Email</li>
+                  <li><i class="bi bi-camera me-2 text-teal"></i>Live camera photo &amp; video evidence capture</li>
+                  <li><i class="bi bi-geo-alt me-2 text-warning"></i>Automatic GPS location &amp; landmark tagging</li>
+                  <li><i class="bi bi-translate me-2 text-info"></i>Voice guidance in English, ಕನ್ನಡ, and हिन्दी</li>
+                  <li><i class="bi bi-star-half me-2 text-warning"></i>Directly rate contractor work quality</li>
+                </ul>
+              </div>
+            </div>
+
+            <div>
+              <a href="{{ url_for('auth.register') }}" class="btn btn-outline-light w-100 py-2 fw-bold fs-6 mb-3">
+                <i class="bi bi-person-plus me-2"></i>Create New Citizen Account &rarr;
+              </a>
+
+              <div class="pt-3 border-top border-secondary text-center small text-secondary">
+                <span><i class="bi bi-telephone-fill me-1 text-teal"></i>Municipal Civic Helpline: <strong>+91 80 2297 5000</strong></span>
+                <span class="d-block mt-1" style="font-size: 0.72rem;">Available 24/7 across all municipal wards &bull; No technical knowledge required</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    initComplaintsMap('landingComplaintsMap');
+  });
+
+  function fillHomeLogin(email, password, role) {
+    if (role === 'citizen') {
+      var tabBtn = document.getElementById('citizen-tab');
+      if (tabBtn) {
+        var tab = new bootstrap.Tab(tabBtn);
+        tab.show();
+      }
+      var emailField = document.getElementById('citizenLoginInput');
+      var passField = document.getElementById('citizenPasswordInput');
+      if (emailField && passField) {
+        emailField.value = email;
+        passField.value = password;
+        emailField.focus();
+      }
+    } else {
+      var tabBtn = document.getElementById('staff-tab');
+      if (tabBtn) {
+        var tab = new bootstrap.Tab(tabBtn);
+        tab.show();
+      }
+      var emailField = document.getElementById('staffLoginEmail');
+      var passField = document.getElementById('staffLoginPassword');
+      if (emailField && passField) {
+        emailField.value = email;
+        passField.value = password;
+        emailField.focus();
+      }
+    }
+  }
+
+  function togglePassField(fieldId, iconId) {
+    var pw = document.getElementById(fieldId);
+    var icon = document.getElementById(iconId);
+    if (pw && icon) {
+      if (pw.type === 'password') {
+        pw.type = 'text';
+        icon.className = 'bi bi-eye-slash';
+      } else {
+        pw.type = 'password';
+        icon.className = 'bi bi-eye';
+      }
+    }
+  }
+</script>
+{% endblock %}
+

@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+
+{% block title %}Officer Operations - {{ dept.name if dept else 'Department' }} - Smart CivicCare 2.0{% endblock %}
+
+{% block extra_css %}
+<style>
+  #officerMap {
+    height: 320px;
+    border-radius: 8px;
+    z-index: 1;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+
+  <!-- Department Officer Header Banner -->
+  <div class="civic-card shadow-sm p-4 mb-4" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 80%, {{ dept.color if dept else '#0d9488' }} 100%); color: #fff;">
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="civic-brand-icon" style="background: {{ dept.color if dept else '#0d9488' }}; width: 54px; height: 54px; font-size: 1.8rem;">
+          <i class="bi {{ dept.icon if dept else 'bi-briefcase' }}"></i>
+        </div>
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge bg-warning text-dark fw-bold"><i class="bi bi-shield-check me-1"></i>Field Officer</span>
+            <span class="badge bg-dark border text-light">{{ dept.code if dept else 'OFFICER' }}</span>
+          </div>
+          <h3 class="fw-bold mb-0 text-white">{{ dept.name if dept else 'Department Operations' }}</h3>
+          <p class="text-light text-opacity-75 small mb-0">{{ current_user.name }} &bull; {{ current_user.email }}</p>
+        </div>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        {% if dept %}
+          <a href="{{ url_for('departments.department_portal', dept_code=dept.code) }}" class="btn btn-outline-light btn-sm fw-semibold">
+            <i class="bi bi-building me-1"></i>Department Portal &amp; Recommendations
+          </a>
+        {% endif %}
+        <a href="{{ url_for('forecasting.demand_forecast_view') }}" class="btn btn-outline-info text-light btn-sm fw-semibold">
+          <i class="bi bi-graph-up me-1"></i>Demand Forecast
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Operational KPI Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">Total Assigned</div>
+          <div class="kpi-value">{{ total_assigned }}</div>
+          <div class="kpi-sub">Assigned to department queue</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-blue"><i class="bi bi-inbox-fill"></i></div>
+      </div>
+    </div>
+
+    <div class="col-6 col-lg-3">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">Active Work</div>
+          <div class="kpi-value text-teal">{{ in_progress }}</div>
+          <div class="kpi-sub">In progress or accepted</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-teal"><i class="bi bi-tools"></i></div>
+      </div>
+    </div>
+
+    <div class="col-6 col-lg-3">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">High Priority</div>
+          <div class="kpi-value text-danger">{{ high_priority }}</div>
+          <div class="kpi-sub">Critical hazard tasks</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-red"><i class="bi bi-exclamation-octagon-fill"></i></div>
+      </div>
+    </div>
+
+    <div class="col-6 col-lg-3">
+      <div class="civic-card kpi-card">
+        <div>
+          <div class="kpi-title">Resolved &amp; Verified</div>
+          <div class="kpi-value text-success">{{ resolved }}</div>
+          <div class="kpi-sub">Repairs confirmed</div>
+        </div>
+        <div class="kpi-icon-bubble kpi-bubble-green"><i class="bi bi-check-circle-fill"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Queue & Map Grid -->
+  <div class="row g-4">
+    <!-- Assigned Queue Table -->
+    <div class="col-lg-8">
+      <div class="civic-card shadow-sm p-4 h-100">
+        <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between mb-3 pb-2 border-bottom gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-list-task text-teal fs-5"></i>
+            <h5 class="fw-bold text-navy-dark mb-0">Assigned Work Queue</h5>
+          </div>
+          <!-- Status Filter Pills -->
+          <div class="d-flex align-items-center gap-2 small">
+            <span class="text-muted">Filter:</span>
+            <select class="form-select form-select-sm" style="width: auto;" onchange="location.href='?status=' + this.value;">
+              <option value="all" {{ 'selected' if status_filter == 'all' else '' }}>All Stages</option>
+              {% for st in statuses %}
+                <option value="{{ st }}" {{ 'selected' if status_filter == st else '' }}>{{ st }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        {% if complaints %}
+          <div class="table-responsive">
+            <table class="civic-table table align-middle">
+              <thead>
+                <tr>
+                  <th>Ticket</th>
+                  <th>Problem &amp; Citizen</th>
+                  <th>Ward &amp; Location</th>
+                  <th>Contractor &amp; Budget</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for c in complaints %}
+                  <tr>
+                    <td>
+                      <a href="{{ url_for('citizen.complaint_detail', complaint_id=c.id) }}" class="fw-bold text-teal text-decoration-none font-monospace small">
+                        #{{ c.ticket_id }}
+                      </a>
+                      <div class="text-muted" style="font-size: 0.7rem;">{{ (c.created_at|string)[:10] }}</div>
+                    </td>
+                    <td>
+                      <strong class="text-dark small d-block text-truncate" style="max-width: 180px;">{{ c.title }}</strong>
+                      <small class="text-muted">{{ c.citizen_name }} &bull; {{ c.citizen_phone or 'No phone' }}</small>
+                    </td>
+                    <td>
+                      <span class="small fw-semibold text-dark">{{ c.ward_number }}</span>
+                      <small class="text-muted d-block text-truncate" style="max-width: 130px;">{{ c.address }}</small>
+                    </td>
+                    <td>
+                      {% if c.contractor_name %}
+                        <div class="fw-semibold small text-navy-dark text-truncate" style="max-width: 170px;" title="{{ c.contractor_name }}">
+                          <i class="bi bi-briefcase me-1 text-warning"></i>{{ c.contractor_name }}
+                        </div>
+                        <div class="text-muted text-truncate" style="font-size: 0.72rem; max-width: 170px;">
+                          <i class="bi bi-person-badge me-1 text-teal"></i>{{ c.engineer_name or 'Supervising Engineer' }}
+                        </div>
+                        <div class="d-flex align-items-center gap-1 mt-1">
+                          {% if c.budget_allocated %}
+                            <span class="badge bg-light text-success border border-success-subtle font-monospace" style="font-size: 0.7rem;">
+                              ₹{{ "{:,.0f}".format(c.budget_allocated) }}
+                            </span>
+                          {% endif %}
+                          {% if c.government_order_no %}
+                            <a href="{{ url_for('admin.view_government_order', complaint_id=c.id) }}" target="_blank" class="badge bg-light text-primary border border-primary-subtle text-decoration-none" style="font-size: 0.7rem;" title="View &amp; Print Official Government Order Copy">
+                              <i class="bi bi-file-earmark-text me-1"></i>G.O. Copy
+                            </a>
+                          {% endif %}
+                        </div>
+                      {% else %}
+                        <span class="badge bg-light text-secondary border" style="font-size: 0.7rem;">Direct Dept Crew</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if c.priority == 'HIGH' %}
+                        <span class="badge badge-priority-high">HIGH</span>
+                      {% elif c.priority == 'MEDIUM' %}
+                        <span class="badge badge-priority-medium">MEDIUM</span>
+                      {% else %}
+                        <span class="badge badge-priority-low">LOW</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% set s_clean = c.status|lower|replace(' ', '-') %}
+                      <span class="status-badge status-badge-{{ s_clean }}">
+                        {{ c.status }}
+                      </span>
+                    </td>
+                    <td class="text-end">
+                      <div class="d-flex justify-content-end gap-1">
+                        {% if c.status in ['ASSIGNED', 'SUBMITTED', 'PENDING'] %}
+                          <button type="button" class="btn btn-sm btn-teal text-white py-0 px-2 fw-bold" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#respondModal{{ c.id }}">
+                            Accept
+                          </button>
+                        {% else %}
+                          <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#statusModal{{ c.id }}">
+                            Update
+                          </button>
+                        {% endif %}
+                        <a href="{{ url_for('citizen.complaint_detail', complaint_id=c.id) }}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;">
+                          Detail
+                        </a>
+                      </div>
+
+                      <!-- Accept/Reject Modal -->
+                      <div class="modal fade text-start" id="respondModal{{ c.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                          <div class="modal-content">
+                            <form method="POST" action="{{ url_for('officer.respond_assignment', complaint_id=c.id) }}">
+                              <div class="modal-header">
+                                <h6 class="modal-title fw-bold text-navy-dark">Respond to Assignment #{{ c.ticket_id }}</h6>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                              </div>
+                              <div class="modal-body small">
+                                <p class="mb-2"><strong>Issue:</strong> {{ c.title }}</p>
+                                <p class="text-muted mb-3">{{ c.description }}</p>
+                                <div class="mb-3">
+                                  <label class="form-label fw-semibold">Target Completion Date:</label>
+                                  <input type="date" name="expected_completion_date" class="form-control form-control-sm" required>
+                                </div>
+                                <div class="mb-3">
+                                  <label class="form-label fw-semibold">Decline Reason (Optional - only if rejecting):</label>
+                                  <input type="text" name="reason" class="form-control form-control-sm" placeholder="e.g. Needs specialized heavy machinery">
+                                </div>
+                              </div>
+                              <div class="modal-footer">
+                                <button type="submit" name="action" value="reject" class="btn btn-outline-danger btn-sm">Decline Task</button>
+                                <button type="submit" name="action" value="accept" class="btn btn-teal text-white btn-sm fw-bold">Accept &amp; Schedule</button>
+                              </div>
+                            </form>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Status Update Modal -->
+                      <div class="modal fade text-start" id="statusModal{{ c.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                          <div class="modal-content">
+                            <form method="POST" action="{{ url_for('officer.update_status', complaint_id=c.id) }}">
+                              <div class="modal-header">
+                                <h6 class="modal-title fw-bold text-navy-dark">Update Status - #{{ c.ticket_id }}</h6>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                              </div>
+                              <div class="modal-body small">
+                                <div class="mb-3">
+                                  <label class="form-label fw-semibold">New Workflow Status</label>
+                                  <select name="status" class="form-select form-select-sm" required>
+                                    <option value="ACCEPTED" {{ 'selected' if c.status == 'ACCEPTED' else '' }}>ACCEPTED - Ready for Dispatch</option>
+                                    <option value="WORK IN PROGRESS" {{ 'selected' if c.status == 'WORK IN PROGRESS' else '' }}>WORK IN PROGRESS - Crew on site</option>
+                                    <option value="ON HOLD" {{ 'selected' if c.status == 'ON HOLD' else '' }}>ON HOLD - Weather / parts delayed</option>
+                                    <option value="AWAITING CITIZEN VERIFICATION" {{ 'selected' if c.status == 'AWAITING CITIZEN VERIFICATION' else '' }}>RESOLVED &rarr; AWAITING CITIZEN VERIFICATION</option>
+                                  </select>
+                                </div>
+                                <div class="mb-3">
+                                  <label class="form-label fw-semibold">Work Remarks / Action Taken</label>
+                                  <textarea name="remarks" class="form-control form-control-sm" rows="3" placeholder="Describe actions performed by the field crew..." required></textarea>
+                                </div>
+                              </div>
+                              <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-civic-teal btn-sm fw-bold">Save Status Update</button>
+                              </div>
+                            </form>
+                          </div>
+                        </div>
+                      </div>
+
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="text-center py-5 text-muted">
+            <i class="bi bi-check2-circle fs-1 text-teal d-block mb-2"></i>
+            <h6 class="fw-bold text-navy-dark">Department Queue is Clear!</h6>
+            <p class="small mb-0">No active complaints match the selected filter for your department.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Map & Fast Evidence Upload Column -->
+    <div class="col-lg-4">
+      <!-- Geographic Map of Incidents -->
+      <div class="civic-card shadow-sm p-4 mb-4">
+        <h6 class="fw-bold text-navy-dark mb-3"><i class="bi bi-geo-alt-fill text-danger me-2"></i>Department Incidents Map</h6>
+        <div id="officerMap" class="border mb-2"></div>
+        <span class="small text-muted">Live geographical distribution of department work orders.</span>
+      </div>
+
+      <!-- Quick Guidelines -->
+      <div class="civic-card shadow-sm p-4">
+        <h6 class="fw-bold text-navy-dark mb-2"><i class="bi bi-shield-check text-teal me-2"></i>Resolution Best Practices</h6>
+        <ul class="list-unstyled small text-muted lh-lg mb-0">
+          <li><i class="bi bi-check-circle text-teal me-1"></i>Always capture live photo proof before marking as resolved.</li>
+          <li><i class="bi bi-check-circle text-teal me-1"></i>Marking resolved sends notification to the citizen for inspection.</li>
+          <li><i class="bi bi-check-circle text-teal me-1"></i>If the citizen reopens, address their feedback promptly.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var map = L.map('officerMap').setView([12.9716, 77.5946], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    // Plot department complaints
+    var bounds = [];
+    {% for c in complaints %}
+      (function() {
+        var lat = {{ c.latitude }};
+        var lng = {{ c.longitude }};
+        bounds.push([lat, lng]);
+
+        var color = '{{ "#ef4444" if c.priority == "HIGH" else ("#f59e0b" if c.priority == "MEDIUM" else "#10b981") }}';
+        var icon = L.divIcon({
+          className: 'custom-pin',
+          html: '<div style="background-color:' + color + '; width:14px; height:14px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 5px rgba(0,0,0,0.5);"></div>',
+          iconSize: [14, 14],
+          iconAnchor: [7, 7]
+        });
+
+        L.marker([lat, lng], { icon: icon }).addTo(map)
+          .bindPopup('<strong>#{{ c.ticket_id }}</strong><br>{{ c.title }}<br><a href="/complaint/{{ c.id }}" class="btn btn-sm btn-outline-primary py-0 px-1 mt-1" style="font-size:0.7rem;">View</a>');
+      })();
+    {% endfor %}
+
+    if (bounds.length > 0) {
+      map.fitBounds(bounds, { padding: [20, 20] });
+    }
+  });
+</script>
+{% endblock %}
+

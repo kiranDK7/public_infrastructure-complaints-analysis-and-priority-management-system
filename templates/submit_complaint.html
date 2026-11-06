@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Submit Infrastructure Complaint - Smart CivicCare{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="row justify-content-center">
+    <div class="col-lg-10 col-xl-9">
+
+      <!-- Breadcrumb & Header -->
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small">
+              <li class="breadcrumb-item"><a href="{{ url_for('citizen.dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+              <li class="breadcrumb-item active" aria-current="page">New Complaint</li>
+            </ol>
+          </nav>
+          <h3 class="fw-bold text-navy-dark mb-0">Report Public Infrastructure Problem</h3>
+        </div>
+        <span class="ai-badge"><i class="bi bi-cpu"></i> AI Auto-Triage Active</span>
+      </div>
+
+      <div class="row g-4">
+        <!-- Main Form Column -->
+        <div class="col-lg-8">
+          <div class="civic-card shadow-sm p-4">
+            <form method="POST" action="{{ url_for('citizen.submit_complaint') }}" enctype="multipart/form-data" id="complaintForm">
+              
+              <!-- Title -->
+              <div class="mb-3">
+                <label class="form-label fw-semibold text-dark small">Complaint Title *</label>
+                <input type="text" name="title" id="inputTitle" class="form-control" 
+                       placeholder="e.g. Deep pothole crater near school gate causing skids" required autofocus>
+                <div class="form-text small">Provide a concise summary of the issue.</div>
+              </div>
+
+              <!-- Description -->
+              <div class="mb-3">
+                <label class="form-label fw-semibold text-dark small">Detailed Problem Description *</label>
+                <textarea name="description" id="inputDescription" rows="4" class="form-control"
+                          placeholder="Describe the problem, danger level, how long it has persisted, and visible hazards (e.g. open wires, gushing water, blocked traffic)..." required></textarea>
+                <div class="form-text small">Our AI will automatically analyze your description to recommend the right department and safety priority.</div>
+              </div>
+
+              <!-- Category & Severity Row -->
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold text-dark small">Category *</label>
+                  <select name="category" id="selectCategory" class="form-select" required>
+                    <option value="" disabled selected>-- Select or let AI suggest --</option>
+                    {% for cat in categories %}
+                      <option value="{{ cat }}">{{ cat }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold text-dark small">Observed Severity</label>
+                  <select name="severity" id="selectSeverity" class="form-select">
+                    <option value="Critical">Critical (Direct bodily / safety danger)</option>
+                    <option value="High">High (Significant civic disruption)</option>
+                    <option value="Medium" selected>Medium (Standard civic problem)</option>
+                    <option value="Low">Low (Minor inconvenience)</option>
+                    <option value="Cosmetic">Cosmetic (Aesthetic maintenance)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Affected Demographic -->
+              <div class="mb-3">
+                <label class="form-label fw-semibold text-dark small">Estimated Affected Commuters / Residents</label>
+                <select name="affected_people" class="form-select">
+                  <option value="500+ (Entire Ward / Major Hub)">500+ (Entire Ward / Commercial Hub / Metro Route)</option>
+                  <option value="100-500 (Neighborhood / Colony)" selected>100-500 (Neighborhood Street / Colony)</option>
+                  <option value="50-100 (Street / Crossroad)">50-100 (Immediate Crossroad)</option>
+                  <option value="10-50 (Local Corridor)">10-50 (Local Residents)</option>
+                  <option value="<10 (Individual Property)">&lt;10 (Individual Property)</option>
+                </select>
+              </div>
+
+              <!-- Photo Upload -->
+              <div class="mb-4">
+                <label class="form-label fw-semibold text-dark small">Upload Photographic Proof</label>
+                <input type="file" name="photo" id="inputPhoto" class="form-control" accept="image/*">
+                <div class="form-text small">Upload clear photographic evidence to help municipal engineers verify the issue.</div>
+                
+                <!-- Image Preview Box -->
+                <div id="photoPreviewBox" class="mt-2 d-none">
+                  <img id="photoPreview" class="img-thumbnail rounded" style="max-height: 180px;" alt="Selected Photo Preview">
+                </div>
+              </div>
+
+              <!-- Location Section with Leaflet Map Pin Dropper -->
+              <div class="border-top pt-4 mb-4">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <h6 class="fw-bold text-navy-dark mb-0"><i class="bi bi-geo-alt-fill text-danger me-1"></i>Geographical Location</h6>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" id="btnLocateMe">
+                    <i class="bi bi-crosshair me-1"></i>Detect My GPS Location
+                  </button>
+                </div>
+                <p class="small text-muted mb-2">
+                  Click on the interactive map below or drag the marker pin to precisely mark the location of the problem.
+                </p>
+
+                <!-- Interactive Map Container -->
+                <div id="pickerMap" class="civic-map-picker mb-3"></div>
+
+                <div class="row g-2 mb-2">
+                  <div class="col-6">
+                    <label class="form-label small text-muted mb-1">Latitude</label>
+                    <input type="number" step="0.000001" name="latitude" id="inputLat" class="form-control form-control-sm bg-light" value="{{ default_lat }}" required>
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small text-muted mb-1">Longitude</label>
+                    <input type="number" step="0.000001" name="longitude" id="inputLng" class="form-control form-control-sm bg-light" value="{{ default_lng }}" required>
+                  </div>
+                </div>
+
+                <div class="row g-2">
+                  <div class="col-sm-7">
+                    <label class="form-label small text-muted mb-1">Street Address / Road Name</label>
+                    <input type="text" name="address" id="inputAddress" class="form-control form-control-sm" placeholder="e.g. 5th Main Road, Indiranagar">
+                  </div>
+                  <div class="col-sm-5">
+                    <label class="form-label small text-muted mb-1">Nearest Landmark</label>
+                    <input type="text" name="landmark" class="form-control form-control-sm" placeholder="e.g. Near Metro Pillar 42">
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-flex gap-3">
+                <button type="submit" class="btn btn-civic-teal btn-lg flex-grow-1 shadow-sm">
+                  <i class="bi bi-send-check me-1"></i>Submit Complaint
+                </button>
+                <a href="{{ url_for('citizen.dashboard') }}" class="btn btn-outline-secondary btn-lg">Cancel</a>
+              </div>
+
+            </form>
+          </div>
+        </div>
+
+        <!-- Right Side: Real-time AI Copilot Card -->
+        <div class="col-lg-4">
+          <div class="sticky-top" style="top: 85px;">
+            <div class="civic-card p-3 shadow-sm border-teal mb-3">
+              <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="ai-badge"><i class="bi bi-stars"></i> AI PRE-TRIAGE</span>
+                  <div class="spinner-border spinner-border-sm text-teal d-none" id="aiSpinner" role="status"></div>
+                </div>
+                <small class="text-muted">Live Analysis</small>
+              </div>
+
+              <!-- Duplicate Alert Box -->
+              <div id="aiDuplicateWarning" class="mb-3 d-none"></div>
+
+              <div id="aiSuggestionBox">
+                <!-- Suggested Category -->
+                <div class="p-2 rounded bg-light border mb-2">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="small text-muted fw-semibold">Suggested Category:</span>
+                    <span class="badge bg-teal bg-opacity-25 text-teal" id="aiCatConfidence">--</span>
+                  </div>
+                  <div class="d-flex align-items-center justify-content-between">
+                    <span class="fw-bold text-dark small" id="aiSuggestedCat">Type title &amp; description...</span>
+                    <button type="button" class="btn btn-sm btn-outline-teal py-0 px-2" style="font-size: 0.72rem;" id="btnAcceptAICat">
+                      Apply Suggestion
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Priority Prediction -->
+                <div class="p-2 rounded bg-light border mb-2">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="small text-muted fw-semibold">Calculated Priority:</span>
+                    <span class="small fw-bold text-dark" id="aiPriorityScore">--</span>
+                  </div>
+                  <div class="mb-1">
+                    <span class="badge bg-secondary" id="aiSuggestedPriority">Awaiting input</span>
+                  </div>
+                  <div class="small text-muted" style="font-size: 0.75rem;" id="aiPriorityExplanation">
+                    Risk score will automatically compute based on safety triggers and affected radius.
+                  </div>
+                </div>
+
+                <!-- Keywords Detected -->
+                <div class="p-2 rounded bg-light border">
+                  <span class="small text-muted fw-semibold d-block mb-1">Domain Keywords Detected:</span>
+                  <div id="aiKeywordsDetected" class="d-flex flex-wrap gap-1">
+                    <span class="text-muted small">None yet</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Guidelines Card -->
+            <div class="civic-card p-3 bg-light border-0">
+              <h6 class="fw-bold text-dark small mb-2"><i class="bi bi-shield-check text-teal me-1"></i>Helpful Submission Tips</h6>
+              <ul class="list-unstyled small text-muted mb-0 lh-lg" style="font-size: 0.8rem;">
+                <li><i class="bi bi-check text-success me-1"></i>Include visible landmarks (e.g., pillar #, shop name).</li>
+                <li><i class="bi bi-check text-success me-1"></i>Mention if wires or open water holes pose bodily threats.</li>
+                <li><i class="bi bi-check text-success me-1"></i>Clear photos expedite departmental verification by 3x.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/citizen.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    initLocationPicker('pickerMap', 'inputLat', 'inputLng', 'inputAddress');
+  });
+</script>
+{% endblock %}
+

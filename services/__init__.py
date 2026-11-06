@@ -1,0 +1,10 @@
+# services package
+from services.ai_classifier import classify_complaint
+from services.priority_engine import calculate_priority
+from services.duplicate_detector import check_duplicate
+from services.demand_forecasting import forecasting_engine
+from services.hotspot_detection import hotspot_service
+from services.resource_planner import resource_planner
+from services.predictive_maintenance import predictive_maintenance_service
+from services.evidence_service import evidence_service
+from services.notification_service import notification_service
